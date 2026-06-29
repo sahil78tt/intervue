@@ -89,3 +89,31 @@ export const joinRoom = async (req, res) => {
     });
   }
 };
+
+export const getMyRooms = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const { rows } = await pool.query(
+      `SELECT r.*, 
+         (SELECT COUNT(*) FROM room_participants WHERE room_id = r.id) AS participant_count
+       FROM rooms r
+       WHERE r.owner_id = $1
+         AND r.is_active = true
+       ORDER BY r.created_at DESC
+       LIMIT 20`,
+      [userId],
+    );
+
+    return res.status(200).json({
+      status: "success",
+      data: { rooms: rows },
+    });
+  } catch (error) {
+    console.log("Get My Rooms Error:", error.message);
+    return res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+    });
+  }
+};
