@@ -117,3 +117,37 @@ export const getMyRooms = async (req, res) => {
     });
   }
 };
+
+export const deleteRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    // Soft delete - only if user is the owner
+    const result = await pool.query(
+      `UPDATE rooms 
+       SET is_active = false 
+       WHERE id = $1 AND owner_id = $2
+       RETURNING id`,
+      [id, userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Room not found or you are not the owner",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Room deleted successfully",
+    });
+  } catch (error) {
+    console.log("Delete Room Error:", error.message);
+    return res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+    });
+  }
+};
