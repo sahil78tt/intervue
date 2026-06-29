@@ -11,7 +11,7 @@ const generateToken = (userId) => {
 };
 
 export const register = async (req, res) => {
-  console.log("JWT:", process.env.JWT_SECRET);
+  // console.log("JWT:", process.env.JWT_SECRET);
   try {
     const { username, email, password } = req.body;
 
@@ -73,6 +73,73 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Register Error:", error.message);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email and password are required",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide a valid email address",
+      });
+    }
+
+    // Find user
+    const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email.toLowerCase(),
+    ]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    const user = rows[0];
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    const token = generateToken(user.id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          avatar_url: user.avatar_url,
+        },
+        token,
+      },
+    });
+  } catch (error) {
+    console.error("Login Error:", error.message);
     return res.status(500).json({
       status: "error",
       message: "Internal server error",
