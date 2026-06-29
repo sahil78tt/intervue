@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import validator from "validator";
 import pool from "../configs/connect.js";
+
+// Email validation regex
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -21,17 +23,17 @@ export const register = async (req, res) => {
       });
     }
 
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({
-        status: "error",
-        message: "Please provide a valid email address",
-      });
-    }
-
     if (password.length < 6) {
       return res.status(400).json({
         status: "error",
         message: "Password must be at least 6 characters",
+      });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide a valid email address",
       });
     }
 
@@ -85,7 +87,7 @@ export const login = async (req, res) => {
       });
     }
 
-    if (!validator.isEmail(email)) {
+    if (!emailRegex.test(email)) {
       return res.status(400).json({
         status: "error",
         message: "Please provide a valid email address",
