@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./configs/connect.js";
 import authRoutes from "./routes/auth.routes.js";
+import roomRoutes from "./routes/room.routes.js";
 
 // Configs
 dotenv.config({ quiet: true });
@@ -27,6 +28,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/rooms", roomRoutes);
 
 // Server
 const PORT = process.env.PORT || 5001;
