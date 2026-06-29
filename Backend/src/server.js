@@ -3,6 +3,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./configs/connect.js";
+import authRoutes from "./routes/auth.routes.js";
 
 // Configs
 dotenv.config({ quiet: true });
@@ -23,6 +24,9 @@ app.get("/", (req, res) => {
     message: "API is running 🚀",
   });
 });
+
+// Routes
+app.use("/api/auth", authRoutes);
 
 // Server
 const PORT = process.env.PORT || 5001;
