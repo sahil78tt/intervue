@@ -5,6 +5,7 @@ import cors from "cors";
 import { connectDB } from "./configs/connect.js";
 import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
+import executeRoutes from "./routes/execution.routes.js";
 
 // Configs
 dotenv.config({ quiet: true });
@@ -18,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 app.use(cors());
 
-// Routes
+// Health Check Route
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
@@ -29,6 +30,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/execute", executeRoutes);
 
 // Server
 const PORT = process.env.PORT || 5001;
