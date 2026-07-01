@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
+import CreateRoomModal from "../components/CreateRoomModal";
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -18,10 +19,13 @@ function DashboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  // NEW — rooms state
+  // Rooms state
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsError, setRoomsError] = useState("");
+
+  // Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Fetch user info on load
   useEffect(function () {
@@ -43,7 +47,7 @@ function DashboardPage() {
     fetchUser();
   }, []);
 
-  // NEW — Fetch rooms on load
+  // Fetch rooms on load
   useEffect(function () {
     const fetchRooms = async function () {
       try {
@@ -60,11 +64,19 @@ function DashboardPage() {
     fetchRooms();
   }, []);
 
+  // Sign out
   const handleSignOut = function () {
     logout();
     navigate("/login");
   };
 
+  // Called by modal when a new room is created
+  const handleRoomCreated = function (newRoom) {
+    const roomWithCount = { ...newRoom, participant_count: 1 };
+    setRooms([roomWithCount, ...rooms]);
+  };
+
+  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -106,7 +118,12 @@ function DashboardPage() {
               Your rooms.
             </h1>
 
-            <button className="h-10 px-6 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-900 transition-colors">
+            <button
+              onClick={function () {
+                setShowCreateModal(true);
+              }}
+              className="h-10 px-6 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-900 transition-colors"
+            >
               + New room
             </button>
           </div>
@@ -114,30 +131,30 @@ function DashboardPage() {
           {/* Divider */}
           <div className="border-t border-gray-200 mb-8"></div>
 
-          {/* Rooms list — 3 possible states */}
+          {/* Rooms list */}
 
-          {/* State 1: Loading rooms */}
+          {/* State 1: Loading */}
           {roomsLoading && (
             <p className="text-gray-400 text-sm py-16 text-center">
               Loading rooms...
             </p>
           )}
 
-          {/* State 2: Error loading rooms */}
+          {/* State 2: Error */}
           {!roomsLoading && roomsError && (
             <p className="text-black text-sm bg-gray-100 px-4 py-3 rounded-lg">
               {roomsError}
             </p>
           )}
 
-          {/* State 3: No rooms yet */}
+          {/* State 3: Empty */}
           {!roomsLoading && !roomsError && rooms.length === 0 && (
             <p className="text-gray-400 text-sm py-16 text-center">
               No rooms yet. Create your first room to get started.
             </p>
           )}
 
-          {/* State 4: Show rooms */}
+          {/* State 4: Rooms exist */}
           {!roomsLoading && !roomsError && rooms.length > 0 && (
             <div className="flex flex-col">
               {rooms.map(function (room) {
@@ -147,12 +164,10 @@ function DashboardPage() {
                     className="flex items-center justify-between py-6 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer px-4 -mx-4"
                   >
                     <div className="flex flex-col gap-2">
-                      {/* Room name */}
                       <h3 className="text-black text-lg font-normal">
                         {room.name}
                       </h3>
 
-                      {/* Meta info — uppercase eyebrow style */}
                       <div className="flex items-center gap-3 text-xs text-gray-500">
                         <span className="uppercase tracking-wider font-medium">
                           {room.language}
@@ -171,7 +186,6 @@ function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Arrow */}
                     <span className="text-gray-400 text-xl">→</span>
                   </div>
                 );
@@ -180,6 +194,16 @@ function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Create Room Modal */}
+      {showCreateModal && (
+        <CreateRoomModal
+          onClose={function () {
+            setShowCreateModal(false);
+          }}
+          onRoomCreated={handleRoomCreated}
+        />
+      )}
     </div>
   );
 }
