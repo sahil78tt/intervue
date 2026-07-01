@@ -81,6 +81,26 @@ function DashboardPage() {
     setRooms([roomWithCount, ...rooms]);
   };
 
+  // Delete room with confirmation
+  const handleDeleteRoom = async function (roomId, roomName, e) {
+    // Prevent room click from firing (don't navigate to room)
+    e.stopPropagation();
+    const confirmed = window.confirm('Delete room "' + roomName + '"?');
+    if (!confirmed) return;
+    try {
+      await api.delete("/rooms/" + roomId);
+      // Remove from local state — no need to re-fetch
+      setRooms(
+        rooms.filter(function (r) {
+          return r.id !== roomId;
+        }),
+      );
+    } catch (err) {
+      console.log("Delete room error:", err.message);
+      alert("Failed to delete room.");
+    }
+  };
+
   // Handle joining a room by share link
   const handleJoinRoom = async function (e) {
     e.preventDefault();
@@ -88,11 +108,8 @@ function DashboardPage() {
     setJoinLoading(true);
 
     try {
-      // Extract share link from either full URL or just the code
-      // User might paste: "V1StGXR8_Z" OR "http://localhost:5173/room/V1StGXR8_Z"
       let shareLink = joinLink.trim();
 
-      // If it's a full URL, get the last part
       if (shareLink.includes("/")) {
         const parts = shareLink.split("/");
         shareLink = parts[parts.length - 1];
@@ -101,7 +118,6 @@ function DashboardPage() {
       const response = await api.post("/rooms/join/" + shareLink);
       const room = response.data.data.room;
 
-      // Navigate to the room page (we'll build this next)
       navigate("/room/" + room.share_link);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
@@ -166,10 +182,7 @@ function DashboardPage() {
             </button>
           </div>
 
-          {/* Divider */}
           <div className="border-t border-gray-200 mb-8"></div>
-
-          {/* Rooms list */}
 
           {/* State 1: Loading */}
           {roomsLoading && (
@@ -199,7 +212,10 @@ function DashboardPage() {
                 return (
                   <div
                     key={room.id}
-                    className="flex items-center justify-between py-6 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer px-4 -mx-4"
+                    onClick={function () {
+                      navigate("/room/" + room.share_link);
+                    }}
+                    className="group flex items-center justify-between py-6 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer px-4 -mx-4"
                   >
                     <div className="flex flex-col gap-2">
                       <h3 className="text-black text-lg font-normal">
@@ -224,7 +240,18 @@ function DashboardPage() {
                       </div>
                     </div>
 
-                    <span className="text-gray-400 text-xl">→</span>
+                    {/* Right side — delete button (visible on hover) + arrow */}
+                    <div className="flex items-center gap-6">
+                      <button
+                        onClick={function (e) {
+                          handleDeleteRoom(room.id, room.name, e);
+                        }}
+                        className="text-xs text-gray-400 hover:text-black font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        delete
+                      </button>
+                      <span className="text-gray-400 text-xl">→</span>
+                    </div>
                   </div>
                 );
               })}

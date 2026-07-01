@@ -29,6 +29,9 @@ function RoomPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Copy status state
+  const [copyStatus, setCopyStatus] = useState("copy link");
+
   // Fetch room details when page loads
   useEffect(
     function () {
@@ -126,8 +129,11 @@ function RoomPage() {
   const handleCopyLink = function () {
     const fullLink = window.location.href;
     navigator.clipboard.writeText(fullLink);
-    // Simple feedback — could be a toast later
-    alert("Link copied to clipboard!");
+    // Change button text temporarily
+    setCopyStatus("copied ✓");
+    setTimeout(function () {
+      setCopyStatus("copy link");
+    }, 2000);
   };
 
   // Loading state
@@ -174,7 +180,7 @@ function RoomPage() {
             onClick={handleCopyLink}
             className="text-gray-500 text-sm font-semibold hover:text-black transition-colors"
           >
-            copy link
+            {copyStatus}
           </button>
 
           <button
@@ -249,7 +255,6 @@ function RoomPage() {
               <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
                 Problem
               </p>
-              {/* Only HOST sees edit controls */}
               {role === "host" && !isEditingProblem && (
                 <button
                   onClick={function () {
