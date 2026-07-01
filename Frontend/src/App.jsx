@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
+import RoomPage from "./pages/RoomPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -12,12 +13,21 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Dashboard is now PROTECTED — only logged-in users */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Room page — also protected */}
+        <Route
+          path="/room/:shareLink"
+          element={
+            <ProtectedRoute>
+              <RoomPage />
             </ProtectedRoute>
           }
         />

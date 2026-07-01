@@ -27,6 +27,11 @@ function DashboardPage() {
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Join room state
+  const [joinLink, setJoinLink] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
+
   // Fetch user info on load
   useEffect(function () {
     const fetchUser = async function () {
@@ -74,6 +79,39 @@ function DashboardPage() {
   const handleRoomCreated = function (newRoom) {
     const roomWithCount = { ...newRoom, participant_count: 1 };
     setRooms([roomWithCount, ...rooms]);
+  };
+
+  // Handle joining a room by share link
+  const handleJoinRoom = async function (e) {
+    e.preventDefault();
+    setJoinError("");
+    setJoinLoading(true);
+
+    try {
+      // Extract share link from either full URL or just the code
+      // User might paste: "V1StGXR8_Z" OR "http://localhost:5173/room/V1StGXR8_Z"
+      let shareLink = joinLink.trim();
+
+      // If it's a full URL, get the last part
+      if (shareLink.includes("/")) {
+        const parts = shareLink.split("/");
+        shareLink = parts[parts.length - 1];
+      }
+
+      const response = await api.post("/rooms/join/" + shareLink);
+      const room = response.data.data.room;
+
+      // Navigate to the room page (we'll build this next)
+      navigate("/room/" + room.share_link);
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setJoinError(err.response.data.message);
+      } else {
+        setJoinError("Failed to join room.");
+      }
+    } finally {
+      setJoinLoading(false);
+    }
   };
 
   // Show loading state
@@ -192,6 +230,49 @@ function DashboardPage() {
               })}
             </div>
           )}
+
+          {/* Join room section */}
+          <div className="mt-16 pt-12 border-t border-gray-200">
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-6">
+              or join a room
+            </p>
+
+            <form onSubmit={handleJoinRoom} className="flex items-end gap-4">
+              <div className="flex-1 flex flex-col gap-2">
+                <label
+                  htmlFor="join-link"
+                  className="text-black text-sm font-medium"
+                >
+                  Share link
+                </label>
+                <input
+                  id="join-link"
+                  type="text"
+                  value={joinLink}
+                  onChange={function (e) {
+                    setJoinLink(e.target.value);
+                  }}
+                  placeholder="V1StGXR8_Z or paste full link"
+                  required
+                  className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={joinLoading}
+                className="h-10 px-6 text-black text-sm font-semibold border border-black rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {joinLoading ? "Joining..." : "Join"}
+              </button>
+            </form>
+
+            {joinError && (
+              <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg mt-4">
+                {joinError}
+              </p>
+            )}
+          </div>
         </div>
       </main>
 
