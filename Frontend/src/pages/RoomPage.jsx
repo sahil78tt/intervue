@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
+import Editor from "@monaco-editor/react";
 
 function RoomPage() {
   const navigate = useNavigate();
   const { shareLink } = useParams();
+
+  // Code editor state
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("javascript");
 
   // Room state
   const [room, setRoom] = useState(null);
@@ -36,6 +41,32 @@ function RoomPage() {
     },
     [shareLink],
   );
+
+  // When room loads, set editor language to match room's default
+  useEffect(
+    function () {
+      if (room) {
+        setLanguage(room.language);
+        setCode(getStarterCode(room.language));
+      }
+    },
+    [room],
+  );
+
+  // Returns starter template code for each language
+  function getStarterCode(lang) {
+    const starters = {
+      javascript:
+        "// Write your JavaScript code here\nconsole.log('Hello, Intervue!');",
+      python: "# Write your Python code here\nprint('Hello, Intervue!')",
+      cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << "Hello, Intervue!" << endl;\n  return 0;\n}',
+      c: '#include <stdio.h>\n\nint main() {\n  printf("Hello, Intervue!\\n");\n  return 0;\n}',
+      java: 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, Intervue!");\n  }\n}',
+      typescript:
+        "// Write your TypeScript code here\nconst greeting: string = 'Hello, Intervue!';\nconsole.log(greeting);",
+    };
+    return starters[lang] || "";
+  }
 
   // Copy share link to clipboard
   const handleCopyLink = function () {
@@ -110,9 +141,43 @@ function RoomPage() {
       {/* Main split layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT — Editor area (65%) */}
-        <div className="flex-1 flex flex-col border-r border-gray-200">
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-400 text-sm">Monaco Editor goes here</p>
+        <div className="flex-1 flex flex-col border-r border-gray-200 overflow-hidden">
+          {/* Editor toolbar — language + run */}
+          <div className="h-12 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
+            {/* Language display */}
+            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+              {language}
+            </span>
+            {/* Placeholder for Run button */}
+            <button
+              disabled
+              className="h-8 px-4 bg-black text-white text-xs font-semibold rounded-full opacity-50 cursor-not-allowed"
+            >
+              Run code
+            </button>
+          </div>
+          {/* Monaco Editor */}
+          <div className="flex-1 overflow-hidden">
+            <Editor
+              height="100%"
+              language={language}
+              value={code}
+              onChange={function (newValue) {
+                setCode(newValue || "");
+              }}
+              theme="vs"
+              options={{
+                fontSize: 14,
+                fontFamily: "'Fira Code', 'Consolas', monospace",
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                padding: { top: 16 },
+                lineNumbers: "on",
+                renderLineHighlight: "none",
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+              }}
+            />
           </div>
         </div>
 
