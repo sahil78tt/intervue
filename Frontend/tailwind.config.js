@@ -1,0 +1,38 @@
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        primary: "#000000",
+        "on-primary": "#ffffff",
+        ink: "#030303",
+        "ink-soft": "#1a1a1a",
+        graphite: "#404040",
+        slate: "#676f7b",
+        "slate-soft": "#727a85",
+        mute: "#6b7280",
+        stone: "#939393",
+        ash: "#999999",
+        hairline: "#e7eaf0",
+        "hairline-soft": "#c9ccd1",
+        "surface-cool": "#d0d4d4",
+        canvas: "#ffffff",
+        "canvas-warm": "#fefefe",
+        scrim: "#1a1a1a",
+        footer: "#030303",
+      },
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+      },
+      borderRadius: {
+        none: "0px",
+        xs: "4px",
+        sm: "6px",
+        md: "8px",
+        lg: "16px",
+        full: "9999px",
+      },
+    },
+  },
+  plugins: [],
+};

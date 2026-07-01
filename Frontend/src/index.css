@@ -1,47 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
-@import "tailwindcss";
 
-@theme {
-  /* Colors — from design.md */
-  --color-primary: #000000;
-  --color-on-primary: #ffffff;
-  --color-ink: #030303;
-  --color-ink-soft: #1a1a1a;
-  --color-graphite: #404040;
-  --color-slate: #676f7b;
-  --color-slate-soft: #727a85;
-  --color-mute: #6b7280;
-  --color-stone: #939393;
-  --color-ash: #999999;
-  --color-hairline: #e7eaf0;
-  --color-hairline-soft: #c9ccd1;
-  --color-surface-cool: #d0d4d4;
-  --color-canvas: #ffffff;
-  --color-canvas-warm: #fefefe;
-  --color-scrim: #1a1a1a;
-  --color-footer: #030303;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  /* Typography */
-  --font-sans: "Inter", sans-serif;
-
-  /* Spacing */
-  --spacing-xxs: 4px;
-  --spacing-xs: 8px;
-  --spacing-sm: 12px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-xxl: 48px;
-  --spacing-section: 64px;
-  --spacing-section-lg: 96px;
-
-  /* Border radius */
-  --radius-none: 0px;
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
+#root {
+  width: 100%;
+  min-height: 100vh;
 }
 
 * {
