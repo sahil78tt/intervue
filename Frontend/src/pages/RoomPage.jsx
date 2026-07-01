@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 import Editor from "@monaco-editor/react";
 
+const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
+
 function RoomPage() {
   const navigate = useNavigate();
   const { shareLink } = useParams();
@@ -10,6 +12,11 @@ function RoomPage() {
   // Code editor state
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
+
+  // Execution state
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState("");
+  const [outputError, setOutputError] = useState("");
 
   // Room state
   const [room, setRoom] = useState(null);
@@ -67,6 +74,31 @@ function RoomPage() {
     };
     return starters[lang] || "";
   }
+
+  // Send code to backend for execution
+  const handleRunCode = async function () {
+    setIsRunning(true);
+    setOutput("");
+    setOutputError("");
+    try {
+      const response = await api.post("/execute", {
+        language: language,
+        code: code,
+      });
+      // Backend returns { output, memory, cpuTime, statusCode }
+      const result = response.data.data;
+      setOutput(result.output);
+    } catch (err) {
+      console.log("Run code error:", err.message);
+      if (err.response && err.response.data && err.response.data.message) {
+        setOutputError(err.response.data.message);
+      } else {
+        setOutputError("Failed to run code. Try again.");
+      }
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   // Copy share link to clipboard
   const handleCopyLink = function () {
@@ -144,16 +176,30 @@ function RoomPage() {
         <div className="flex-1 flex flex-col border-r border-gray-200 overflow-hidden">
           {/* Editor toolbar — language + run */}
           <div className="h-12 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
-            {/* Language display */}
-            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-              {language}
-            </span>
-            {/* Placeholder for Run button */}
-            <button
-              disabled
-              className="h-8 px-4 bg-black text-white text-xs font-semibold rounded-full opacity-50 cursor-not-allowed"
+            {/* Language selector */}
+            <select
+              value={language}
+              onChange={function (e) {
+                setLanguage(e.target.value);
+              }}
+              className="text-xs text-black uppercase tracking-wider font-medium bg-white cursor-pointer hover:text-gray-500 transition-colors"
             >
-              Run code
+              {LANGUAGES.map(function (lang) {
+                return (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                );
+              })}
+            </select>
+
+            {/* Run button */}
+            <button
+              onClick={handleRunCode}
+              disabled={isRunning}
+              className="h-8 px-4 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRunning ? "Running..." : "Run code"}
             </button>
           </div>
           {/* Monaco Editor */}
@@ -196,9 +242,32 @@ function RoomPage() {
             <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">
               Output
             </p>
-            <p className="text-gray-400 text-sm">
-              Run your code to see output.
-            </p>
+
+            {/* State 1: Running */}
+            {isRunning && (
+              <p className="text-gray-400 text-sm">Running your code...</p>
+            )}
+
+            {/* State 2: Error from API */}
+            {!isRunning && outputError && (
+              <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg">
+                {outputError}
+              </p>
+            )}
+
+            {/* State 3: Output exists (success or code error) */}
+            {!isRunning && !outputError && output && (
+              <pre className="text-sm text-black font-mono whitespace-pre-wrap break-words">
+                {output}
+              </pre>
+            )}
+
+            {/* State 4: Nothing run yet */}
+            {!isRunning && !outputError && !output && (
+              <p className="text-gray-400 text-sm">
+                Run your code to see output.
+              </p>
+            )}
           </div>
         </div>
       </div>
