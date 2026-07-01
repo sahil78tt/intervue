@@ -151,3 +151,56 @@ export const deleteRoom = async (req, res) => {
     });
   }
 };
+// Get single room by share link (for room page)
+export const getRoomByShareLink = async (req, res) => {
+  try {
+    const { shareLink } = req.params;
+    const userId = req.userId;
+
+    const roomResult = await pool.query(
+      `SELECT * FROM rooms 
+       WHERE share_link = $1 
+         AND is_active = true 
+         AND expires_at > NOW()`,
+      [shareLink],
+    );
+
+    if (roomResult.rows.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Room not found or has expired",
+      });
+    }
+
+    const room = roomResult.rows[0];
+
+    const participantCheck = await pool.query(
+      `SELECT role FROM room_participants
+       WHERE room_id = $1 AND user_id = $2`,
+      [room.id, userId],
+    );
+
+    if (participantCheck.rows.length === 0) {
+      return res.status(403).json({
+        status: "error",
+        message: "You are not a member of this room. Please join first.",
+      });
+    }
+
+    const role = participantCheck.rows[0].role;
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        room: room,
+        role: role,
+      },
+    });
+  } catch (error) {
+    console.log("Get Room Error:", error.message);
+    return res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+    });
+  }
+};
