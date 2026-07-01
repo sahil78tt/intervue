@@ -204,3 +204,39 @@ export const getRoomByShareLink = async (req, res) => {
     });
   }
 };
+
+//host only
+export const updateProblem = async (req, res) => {
+  try {
+    const { shareLink } = req.params;
+    const { problem_statement } = req.body;
+    const userId = req.userId;
+
+    const result = await pool.query(
+      `UPDATE rooms 
+       SET problem_statement = $1
+       WHERE share_link = $2 AND owner_id = $3
+       RETURNING *`,
+      [problem_statement, shareLink, userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({
+        status: "error",
+        message: "You are not the host of this room",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Problem updated successfully",
+      data: { room: result.rows[0] },
+    });
+  } catch (error) {
+    console.log("Update Problem Error:", error.message);
+    return res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+    });
+  }
+};

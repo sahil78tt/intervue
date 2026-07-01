@@ -13,6 +13,11 @@ function RoomPage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
 
+  // Problem statement state
+  const [problemStatement, setProblemStatement] = useState("");
+  const [isEditingProblem, setIsEditingProblem] = useState(false);
+  const [problemSaving, setProblemSaving] = useState(false);
+
   // Execution state
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState("");
@@ -55,6 +60,7 @@ function RoomPage() {
       if (room) {
         setLanguage(room.language);
         setCode(getStarterCode(room.language));
+        setProblemStatement(room.problem_statement || "");
       }
     },
     [room],
@@ -74,6 +80,22 @@ function RoomPage() {
     };
     return starters[lang] || "";
   }
+
+  // Save problem statement (host only)
+  const handleSaveProblem = async function () {
+    setProblemSaving(true);
+    try {
+      await api.patch("/rooms/" + shareLink + "/problem", {
+        problem_statement: problemStatement,
+      });
+      setIsEditingProblem(false);
+    } catch (err) {
+      console.log("Save problem error:", err.message);
+      alert("Failed to save problem. Try again.");
+    } finally {
+      setProblemSaving(false);
+    }
+  };
 
   // Send code to backend for execution
   const handleRunCode = async function () {
@@ -138,19 +160,15 @@ function RoomPage() {
     <div className="h-screen bg-white flex flex-col">
       {/* Navbar */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200 flex-shrink-0">
-        {/* Left — wordmark + room name */}
         <div className="flex items-center gap-6">
           <span className="text-black text-sm font-semibold">intervue</span>
           <span className="text-gray-300">|</span>
           <span className="text-black text-sm">{room.name}</span>
-
-          {/* Role badge */}
           <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
             {role}
           </span>
         </div>
 
-        {/* Right — actions */}
         <div className="flex items-center gap-4">
           <button
             onClick={handleCopyLink}
@@ -172,11 +190,9 @@ function RoomPage() {
 
       {/* Main split layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* LEFT — Editor area (65%) */}
+        {/* LEFT — Editor area */}
         <div className="flex-1 flex flex-col border-r border-gray-200 overflow-hidden">
-          {/* Editor toolbar — language + run */}
           <div className="h-12 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
-            {/* Language selector */}
             <select
               value={language}
               onChange={function (e) {
@@ -193,7 +209,6 @@ function RoomPage() {
               })}
             </select>
 
-            {/* Run button */}
             <button
               onClick={handleRunCode}
               disabled={isRunning}
@@ -202,7 +217,6 @@ function RoomPage() {
               {isRunning ? "Running..." : "Run code"}
             </button>
           </div>
-          {/* Monaco Editor */}
           <div className="flex-1 overflow-hidden">
             <Editor
               height="100%"
@@ -227,42 +241,89 @@ function RoomPage() {
           </div>
         </div>
 
-        {/* RIGHT — Panels (35%) */}
+        {/* RIGHT — Panels */}
         <div className="w-[400px] flex flex-col">
-          {/* Top — Problem panel */}
+          {/* Problem panel */}
           <div className="flex-1 border-b border-gray-200 p-6 overflow-y-auto">
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">
-              Problem
-            </p>
-            <p className="text-gray-400 text-sm">No problem statement yet.</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                Problem
+              </p>
+              {/* Only HOST sees edit controls */}
+              {role === "host" && !isEditingProblem && (
+                <button
+                  onClick={function () {
+                    setIsEditingProblem(true);
+                  }}
+                  className="text-xs text-gray-500 font-semibold hover:text-black transition-colors"
+                >
+                  {problemStatement ? "edit" : "+ add"}
+                </button>
+              )}
+              {role === "host" && isEditingProblem && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={function () {
+                      setProblemStatement(room.problem_statement || "");
+                      setIsEditingProblem(false);
+                    }}
+                    className="text-xs text-gray-500 font-semibold hover:text-black transition-colors"
+                  >
+                    cancel
+                  </button>
+                  <button
+                    onClick={handleSaveProblem}
+                    disabled={problemSaving}
+                    className="h-7 px-3 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50"
+                  >
+                    {problemSaving ? "..." : "save"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isEditingProblem ? (
+              <textarea
+                value={problemStatement}
+                onChange={function (e) {
+                  setProblemStatement(e.target.value);
+                }}
+                placeholder="Type the problem statement here..."
+                autoFocus
+                rows={12}
+                className="w-full text-sm text-black bg-white border border-gray-200 p-3 resize-none focus:border-black transition-colors font-mono"
+              />
+            ) : problemStatement ? (
+              <pre className="text-sm text-black whitespace-pre-wrap break-words font-sans">
+                {problemStatement}
+              </pre>
+            ) : (
+              <p className="text-gray-400 text-sm">
+                {role === "host"
+                  ? "No problem yet. Click + add to write one."
+                  : "The host has not set a problem yet."}
+              </p>
+            )}
           </div>
 
-          {/* Bottom — Output panel */}
+          {/* Output panel */}
           <div className="flex-1 p-6 overflow-y-auto">
             <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">
               Output
             </p>
-
-            {/* State 1: Running */}
             {isRunning && (
               <p className="text-gray-400 text-sm">Running your code...</p>
             )}
-
-            {/* State 2: Error from API */}
             {!isRunning && outputError && (
               <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg">
                 {outputError}
               </p>
             )}
-
-            {/* State 3: Output exists (success or code error) */}
             {!isRunning && !outputError && output && (
               <pre className="text-sm text-black font-mono whitespace-pre-wrap break-words">
                 {output}
               </pre>
             )}
-
-            {/* State 4: Nothing run yet */}
             {!isRunning && !outputError && !output && (
               <p className="text-gray-400 text-sm">
                 Run your code to see output.
