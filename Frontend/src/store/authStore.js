@@ -1,12 +1,11 @@
 import { create } from "zustand";
+import axios from "../api/axios.js";
 
 const useAuthStore = create(function (set) {
   return {
-    // State
     user: null,
-    token: null,
+    token: localStorage.getItem("token") || null,
 
-    // Actions
     setUser: function (user, token) {
       set({ user: user, token: token });
       localStorage.setItem("token", token);
@@ -19,6 +18,20 @@ const useAuthStore = create(function (set) {
 
     initializeAuth: function (user, token) {
       set({ user: user, token: token });
+    },
+
+    fetchUser: async function () {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await axios.get("/auth/me");
+        set({ user: res.data.user, token: token });
+      } catch (err) {
+        console.log("fetchUser failed:", err.message);
+        set({ user: null, token: null });
+        localStorage.removeItem("token");
+      }
     },
   };
 });

@@ -4,6 +4,7 @@ import api from "../api/axios";
 import Editor from "@monaco-editor/react";
 import socket from "../lib/socket";
 import useAuthStore from "../store/authStore";
+import ChatPanel from "../components/ChatPanel";
 
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
@@ -23,7 +24,6 @@ function RoomPage() {
   const ydocRef = useRef(null);
 
   const [editorInstance, setEditorInstance] = useState(null);
-  const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
 
   const [problemStatement, setProblemStatement] = useState("");
@@ -41,6 +41,11 @@ function RoomPage() {
   const [activeUsers, setActiveUsers] = useState([]);
 
   const [copyStatus, setCopyStatus] = useState("copy link");
+
+  // ── Chat state ──
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [messages, setMessages] = useState([]);
 
   const handleEditorMount = function (editor) {
     setEditorInstance(editor);
@@ -144,6 +149,29 @@ function RoomPage() {
       };
     },
     [user, room, shareLink],
+  );
+
+  // ── Track incoming messages + unread count ──
+  useEffect(
+    function () {
+      function handleIncoming(msg) {
+        // Always store the message
+        setMessages(function (prev) {
+          return [...prev, msg];
+        });
+        // Only increment unread if panel is closed and it's not my own message
+        if (!isChatOpen && msg.username !== user?.username) {
+          setUnreadCount(function (prev) {
+            return prev + 1;
+          });
+        }
+      }
+      socket.on("chat:received", handleIncoming);
+      return function () {
+        socket.off("chat:received", handleIncoming);
+      };
+    },
+    [isChatOpen, user],
   );
 
   useEffect(
@@ -285,6 +313,14 @@ function RoomPage() {
     }, 2000);
   };
 
+  const handleToggleChat = function () {
+    setIsChatOpen(function (prev) {
+      const next = !prev;
+      if (next) setUnreadCount(0);
+      return next;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -310,7 +346,7 @@ function RoomPage() {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col relative">
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center gap-6">
           <span className="text-black text-xl font-semibold">Intervue</span>
@@ -335,7 +371,19 @@ function RoomPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={handleToggleChat}
+            className="relative text-gray-500 text-sm font-semibold hover:text-black transition-colors"
+          >
+            chat
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={handleCopyLink}
             className="text-gray-500 text-sm font-semibold hover:text-black transition-colors"
@@ -489,6 +537,16 @@ function RoomPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Chat Drawer — floating on top ── */}
+      {isChatOpen && (
+        <ChatPanel
+          shareLink={shareLink}
+          username={user?.username}
+          messages={messages}
+          onClose={handleToggleChat}
+        />
+      )}
     </div>
   );
 }
