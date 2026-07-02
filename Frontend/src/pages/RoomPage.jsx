@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 import Editor from "@monaco-editor/react";
+import socket from "../lib/socket";
 
 const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
 
@@ -68,6 +69,31 @@ function RoomPage() {
     },
     [room],
   );
+
+  // Socket.io lifecycle — connect when page loads, disconnect when leaving
+  useEffect(function () {
+    // Connect to Socket.io server
+    socket.connect();
+    console.log("Socket connecting...");
+
+    // Listen for connection confirmation
+    socket.on("connect", function () {
+      console.log("✅ Connected to socket! ID:", socket.id);
+    });
+
+    // Listen for disconnection
+    socket.on("disconnect", function () {
+      console.log("❌ Disconnected from socket");
+    });
+
+    // CLEANUP — runs when component unmounts (user leaves page)
+    return function () {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.disconnect();
+      console.log("Socket cleaned up");
+    };
+  }, []);
 
   // Returns starter template code for each language
   function getStarterCode(lang) {
