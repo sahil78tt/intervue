@@ -1,13 +1,14 @@
-import { createServer } from "http";
-import { Server } from "socket.io";
 import express from "express";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { connectDB } from "./configs/connect.js";
 import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
 import executeRoutes from "./routes/execution.routes.js";
+import { setupSocketHandlers } from "./sockets/socketHandler.js";
 
 // Configs
 dotenv.config({ quiet: true });
@@ -44,13 +45,8 @@ const io = new Server(httpServer, {
   },
 });
 
-io.on("connection", function (socket) {
-  console.log("✅ User connected:", socket.id);
-
-  socket.on("disconnect", function () {
-    console.log("❌ User disconnected:", socket.id);
-  });
-});
+// Socket handlers
+setupSocketHandlers(io);
 
 // Server
 const PORT = process.env.PORT || 5001;
