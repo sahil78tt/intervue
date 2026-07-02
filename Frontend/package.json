@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ywebsocket": "node ./node_modules/y-websocket/bin/server.js"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -16,6 +17,9 @@
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
     "socket.io-client": "^4.8.3",
+    "y-monaco": "^0.1.6",
+    "y-websocket": "^1.5.4",
+    "yjs": "^13.6.31",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
