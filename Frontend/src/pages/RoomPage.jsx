@@ -3,12 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 import Editor from "@monaco-editor/react";
 import socket from "../lib/socket";
+import useAuthStore from "../store/authStore";
 
 const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
 
 function RoomPage() {
   const navigate = useNavigate();
   const { shareLink } = useParams();
+  const user = useAuthStore(function (state) {
+    return state.user;
+  });
 
   // Code editor state
   const [code, setCode] = useState("");
@@ -29,6 +33,7 @@ function RoomPage() {
   const [role, setRole] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeUsers, setActiveUsers] = useState([]);
 
   // Copy status state
   const [copyStatus, setCopyStatus] = useState("copy link");
@@ -58,6 +63,22 @@ function RoomPage() {
     [shareLink],
   );
 
+  // Fetch user info if not already in Zustand (e.g., after page refresh)
+  useEffect(function () {
+    const fetchUser = async function () {
+      if (user) return; // Already have user, skip
+      try {
+        const response = await api.get("/auth/me");
+        const userData = response.data.data.user;
+        const token = localStorage.getItem("token");
+        useAuthStore.getState().setUser(userData, token);
+      } catch (err) {
+        console.log("Fetch user error:", err.message);
+      }
+    };
+    fetchUser();
+  }, []);
+
   // When room loads, set editor language to match room's default
   useEffect(
     function () {
@@ -71,29 +92,59 @@ function RoomPage() {
   );
 
   // Socket.io lifecycle — connect when page loads, disconnect when leaving
-  useEffect(function () {
-    // Connect to Socket.io server
-    socket.connect();
-    console.log("Socket connecting...");
+  useEffect(
+    function () {
+      // Wait until we have user info AND room info before joining
+      if (!user || !room) return;
+      socket.connect();
 
-    // Listen for connection confirmation
-    socket.on("connect", function () {
-      console.log("✅ Connected to socket! ID:", socket.id);
-    });
+      // When connection is confirmed → tell backend we joined this room
+      socket.on("connect", function () {
+        console.log("✅ Connected to socket! ID:", socket.id);
+        socket.emit("join-room", {
+          shareLink: shareLink,
+          username: user.username,
+        });
+      });
 
-    // Listen for disconnection
-    socket.on("disconnect", function () {
-      console.log("❌ Disconnected from socket");
-    });
+      // Listen for other users joining
+      socket.on("user-joined", function (data) {
+        console.log(`📥 ${data.username} joined the room`);
+      });
 
-    // CLEANUP — runs when component unmounts (user leaves page)
-    return function () {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.disconnect();
-      console.log("Socket cleaned up");
-    };
-  }, []);
+      // Listen for other users leaving
+      socket.on("user-left", function (data) {
+        console.log(`📤 ${data.username} left the room`);
+      });
+
+      // Listen for updated active user list
+      socket.on("room-users", function (users) {
+        setActiveUsers(users);
+      });
+
+      socket.on("disconnect", function () {
+        console.log("❌ Disconnected from socket");
+      });
+
+      // CLEANUP — runs when user leaves the room
+      return function () {
+        // Tell backend we're leaving before disconnecting
+        socket.emit("leave-room", {
+          shareLink: shareLink,
+          username: user.username,
+        });
+        // Remove listeners to prevent duplicates
+        socket.off("connect");
+        socket.off("disconnect");
+        socket.off("user-joined");
+        socket.off("user-left");
+        socket.off("room-users");
+        socket.disconnect();
+        console.log("Socket cleaned up");
+      };
+    },
+    [user, room, shareLink],
+  );
 
   // Returns starter template code for each language
   function getStarterCode(lang) {
@@ -199,6 +250,20 @@ function RoomPage() {
           <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
             {role}
           </span>
+          {/* Active Users Avatars */}
+          <div className="flex -space-x-2">
+            {activeUsers.map(function (u, i) {
+              return (
+                <div
+                  key={i}
+                  title={u.username}
+                  className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold border-2 border-white uppercase"
+                >
+                  {u.username.substring(0, 2)}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
