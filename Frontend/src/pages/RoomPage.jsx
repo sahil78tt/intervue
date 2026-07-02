@@ -167,7 +167,7 @@ function RoomPage() {
       {/* Navbar */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center gap-6">
-          <span className="text-black text-sm font-semibold">intervue</span>
+          <span className="text-black  text-xl font-semibold">Intervue</span>
           <span className="text-gray-300">|</span>
           <span className="text-black text-sm">{room.name}</span>
           <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">

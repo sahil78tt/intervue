@@ -5,16 +5,15 @@ import useAuthStore from "../store/authStore";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const setUser = useAuthStore(function (state) {
-    return state.setUser;
-  });
+  const setUser = useAuthStore((state) => state.setUser);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async function (e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
@@ -45,7 +44,7 @@ function LoginPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header — nav-bar style */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200">
-        <span className="text-black text-sm font-semibold">intervue</span>
+        <span className="text-black text-xl font-semibold">Intervue</span>
 
         <Link
           to="/register"
@@ -76,9 +75,7 @@ function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={function (e) {
-                  setEmail(e.target.value);
-                }}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
                 className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
@@ -93,17 +90,24 @@ function LoginPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={function (e) {
-                  setPassword(e.target.value);
-                }}
-                placeholder="••••••••"
-                required
-                className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
-              />
+              <div className="relative w-full">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors pr-14"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 bottom-3 text-gray-400 hover:text-black text-xs font-semibold uppercase tracking-wider transition-colors"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             {/* Error */}
@@ -128,7 +132,7 @@ function LoginPage() {
       {/* Footer */}
       <footer className="h-12 flex items-center px-8 border-t border-gray-200">
         <p className="text-gray-400 text-xs">
-          © {new Date().getFullYear()} intervue
+          © {new Date().getFullYear()} Intervue
         </p>
       </footer>
     </div>

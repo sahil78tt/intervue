@@ -143,7 +143,7 @@ function DashboardPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Navbar */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200">
-        <span className="text-black text-sm font-semibold">intervue</span>
+        <span className="text-black text-xl font-semibold">Intervue</span>
 
         <div className="flex items-center gap-6">
           <span className="text-gray-500 text-sm">{user && user.username}</span>
@@ -279,7 +279,7 @@ function DashboardPage() {
                   onChange={function (e) {
                     setJoinLink(e.target.value);
                   }}
-                  placeholder="V1StGXR8_Z or paste full link"
+                  placeholder="Enter room ID or link"
                   required
                   className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
                 />
