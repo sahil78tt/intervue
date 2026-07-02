@@ -45,15 +45,11 @@ function removeUserFromAllRooms(socketId) {
 
 export const setupSocketHandlers = function (io) {
   io.on("connection", function (socket) {
-    console.log("✅ User connected:", socket.id);
-
     socket.on("join-room", function (data) {
       const { shareLink, username } = data;
 
       socket.join(shareLink);
       addUserToRoom(shareLink, username, socket.id);
-
-      console.log(`👤 ${username} joined room: ${shareLink}`);
 
       socket.to(shareLink).emit("user-joined", {
         username: username,
@@ -63,13 +59,18 @@ export const setupSocketHandlers = function (io) {
       io.to(shareLink).emit("room-users", roomUsers[shareLink]);
     });
 
+    socket.on("problem-updated", function (data) {
+      const { shareLink, problem_statement } = data;
+      socket.to(shareLink).emit("problem-updated", {
+        problem_statement: problem_statement,
+      });
+    });
+
     socket.on("leave-room", function (data) {
       const { shareLink, username } = data;
 
       socket.leave(shareLink);
       removeUserFromRoom(shareLink, socket.id);
-
-      console.log(`👤 ${username} left room: ${shareLink}`);
 
       socket.to(shareLink).emit("user-left", {
         username: username,
@@ -80,8 +81,6 @@ export const setupSocketHandlers = function (io) {
     });
 
     socket.on("disconnect", function () {
-      console.log("❌ User disconnected:", socket.id);
-
       const affectedRooms = removeUserFromAllRooms(socket.id);
 
       affectedRooms.forEach(function (shareLink) {

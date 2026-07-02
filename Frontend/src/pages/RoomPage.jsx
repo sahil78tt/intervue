@@ -5,7 +5,6 @@ import Editor from "@monaco-editor/react";
 import socket from "../lib/socket";
 import useAuthStore from "../store/authStore";
 
-// Yjs imports
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
@@ -19,44 +18,34 @@ function RoomPage() {
     return state.user;
   });
 
-  // Refs for Yjs cleanup targets (don't need to trigger re-render)
   const bindingRef = useRef(null);
   const providerRef = useRef(null);
   const ydocRef = useRef(null);
 
-  // Editor instance as STATE (so useEffect can react when it mounts)
   const [editorInstance, setEditorInstance] = useState(null);
-
-  // Code editor state
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
 
-  // Problem statement state
   const [problemStatement, setProblemStatement] = useState("");
   const [isEditingProblem, setIsEditingProblem] = useState(false);
   const [problemSaving, setProblemSaving] = useState(false);
 
-  // Execution state
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState("");
   const [outputError, setOutputError] = useState("");
 
-  // Room state
   const [room, setRoom] = useState(null);
   const [role, setRole] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeUsers, setActiveUsers] = useState([]);
 
-  // Copy status state
   const [copyStatus, setCopyStatus] = useState("copy link");
 
-  // Called when Monaco editor is ready
   const handleEditorMount = function (editor) {
     setEditorInstance(editor);
   };
 
-  // Fetch room details when page loads
   useEffect(
     function () {
       const fetchRoom = async function () {
@@ -75,13 +64,11 @@ function RoomPage() {
           setIsLoading(false);
         }
       };
-
       fetchRoom();
     },
     [shareLink],
   );
 
-  // Fetch user info if not already in Zustand (e.g., after page refresh)
   useEffect(function () {
     const fetchUser = async function () {
       if (user) return;
@@ -97,19 +84,16 @@ function RoomPage() {
     fetchUser();
   }, []);
 
-  // When room loads, set editor language + starter code + problem
   useEffect(
     function () {
       if (room) {
         setLanguage(room.language);
-        setCode(getStarterCode(room.language));
         setProblemStatement(room.problem_statement || "");
       }
     },
     [room],
   );
 
-  // Socket.io lifecycle — connect when page loads, disconnect when leaving
   useEffect(
     function () {
       if (!user || !room) return;
@@ -135,6 +119,11 @@ function RoomPage() {
         setActiveUsers(users);
       });
 
+      socket.on("problem-updated", function (data) {
+        setProblemStatement(data.problem_statement);
+        console.log("📝 Problem updated by host");
+      });
+
       socket.on("disconnect", function () {
         console.log("❌ Disconnected from socket");
       });
@@ -149,6 +138,7 @@ function RoomPage() {
         socket.off("user-joined");
         socket.off("user-left");
         socket.off("room-users");
+        socket.off("problem-updated");
         socket.disconnect();
         console.log("Socket cleaned up");
       };
@@ -156,16 +146,13 @@ function RoomPage() {
     [user, room, shareLink],
   );
 
-  // Yjs collaboration — set up when room + editor are ready
   useEffect(
     function () {
       if (!room || !editorInstance) return;
 
-      // 1. Create a Yjs document (the shared brain)
       const ydoc = new Y.Doc();
       ydocRef.current = ydoc;
 
-      // 2. Connect to the y-websocket server
       const provider = new WebsocketProvider(
         "ws://localhost:1234",
         shareLink,
@@ -173,10 +160,15 @@ function RoomPage() {
       );
       providerRef.current = provider;
 
-      // 3. Get the shared text type from the Yjs doc
+      if (user) {
+        provider.awareness.setLocalStateField("user", {
+          name: user.username,
+          color: getUserColor(user.username),
+        });
+      }
+
       const ytext = ydoc.getText("monaco");
 
-      // 4. Bind Yjs text to Monaco editor
       const binding = new MonacoBinding(
         ytext,
         editorInstance.getModel(),
@@ -184,6 +176,14 @@ function RoomPage() {
         provider.awareness,
       );
       bindingRef.current = binding;
+
+      provider.on("sync", function (isSynced) {
+        if (isSynced && ytext.length === 0) {
+          const starterCode = getStarterCode(room.language);
+          ytext.insert(0, starterCode);
+          console.log("📝 Seeded starter code");
+        }
+      });
 
       console.log("✅ Yjs collaboration active");
 
@@ -194,10 +194,9 @@ function RoomPage() {
         console.log("🧹 Yjs cleaned up");
       };
     },
-    [room, shareLink, editorInstance],
+    [room, shareLink, editorInstance, user],
   );
 
-  // Returns starter template code for each language
   function getStarterCode(lang) {
     const starters = {
       javascript:
@@ -212,13 +211,36 @@ function RoomPage() {
     return starters[lang] || "";
   }
 
-  // Save problem statement (host only)
+  function getUserColor(username) {
+    const colors = [
+      "#EF4444",
+      "#F59E0B",
+      "#10B981",
+      "#3B82F6",
+      "#8B5CF6",
+      "#EC4899",
+      "#14B8A6",
+    ];
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+      hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  }
+
   const handleSaveProblem = async function () {
     setProblemSaving(true);
     try {
       await api.patch("/rooms/" + shareLink + "/problem", {
         problem_statement: problemStatement,
       });
+
+      socket.emit("problem-updated", {
+        shareLink: shareLink,
+        problem_statement: problemStatement,
+      });
+
       setIsEditingProblem(false);
     } catch (err) {
       console.log("Save problem error:", err.message);
@@ -228,8 +250,6 @@ function RoomPage() {
     }
   };
 
-  // Send code to backend for execution
-  // Read code directly from editor (Yjs is source of truth now)
   const handleRunCode = async function () {
     setIsRunning(true);
     setOutput("");
@@ -256,7 +276,6 @@ function RoomPage() {
     }
   };
 
-  // Copy share link to clipboard
   const handleCopyLink = function () {
     const fullLink = window.location.href;
     navigator.clipboard.writeText(fullLink);
@@ -266,7 +285,6 @@ function RoomPage() {
     }, 2000);
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -275,7 +293,6 @@ function RoomPage() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
@@ -294,7 +311,6 @@ function RoomPage() {
 
   return (
     <div className="h-screen bg-white flex flex-col">
-      {/* Navbar */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center gap-6">
           <span className="text-black text-xl font-semibold">Intervue</span>
@@ -304,7 +320,6 @@ function RoomPage() {
             {role}
           </span>
 
-          {/* Active Users Avatars */}
           <div className="flex -space-x-2">
             {activeUsers.map(function (u, i) {
               return (
@@ -339,9 +354,7 @@ function RoomPage() {
         </div>
       </header>
 
-      {/* Main split layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* LEFT — Editor area */}
         <div className="flex-1 flex flex-col border-r border-gray-200 overflow-hidden">
           <div className="h-12 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
             <select
@@ -372,7 +385,6 @@ function RoomPage() {
             <Editor
               height="100%"
               language={language}
-              defaultValue={code}
               onMount={handleEditorMount}
               theme="vs"
               options={{
@@ -390,9 +402,7 @@ function RoomPage() {
           </div>
         </div>
 
-        {/* RIGHT — Panels */}
         <div className="w-[400px] flex flex-col">
-          {/* Problem panel */}
           <div className="flex-1 border-b border-gray-200 p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
@@ -454,7 +464,6 @@ function RoomPage() {
             )}
           </div>
 
-          {/* Output panel */}
           <div className="flex-1 p-6 overflow-y-auto">
             <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">
               Output

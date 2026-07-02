@@ -47,3 +47,26 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+.yRemoteSelection {
+  background-color: rgba(59, 130, 246, 0.3);
+  opacity: 0.5;
+}
+
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left: 2px solid;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+  position: absolute;
+  content: " ";
+  border: 3px solid;
+  left: -4px;
+  top: -5px;
+  border-radius: 4px;
+}
