@@ -48,61 +48,65 @@ function RegisterPage() {
       {/* LEFT PANEL — Product showcase              */}
       {/* ═══════════════════════════════════════════ */}
       <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        {/* Top — Brand — BIG & BOLD */}
+        {/* Top — Brand */}
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
           <span className="text-2xl font-medium tracking-tight text-zinc-100">
             Intervue
           </span>
+          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest ml-2">
+            v1.0.0
+          </span>
         </div>
 
-        <div className="my-8 flex flex-col gap-4">
+        {/* Middle — Room list + feature list */}
+        <div className="my-8 flex flex-col gap-6">
+          {/* Fake room list — matching real dashboard format */}
           <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
-            <div className="h-9 border-b border-white/5 flex items-center justify-between px-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-                  Rooms
-                </span>
-                <div className="h-px w-4 bg-white/10" />
-                <span className="text-xs font-mono text-zinc-500">
-                  3 active
-                </span>
-              </div>
-              <span className="text-xs font-mono text-zinc-500 border border-white/10 px-2 py-0.5 rounded-full">
-                01
+            <div className="h-9 border-b border-white/5 flex items-center px-4">
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+                Your rooms
               </span>
             </div>
 
             <div className="divide-y divide-white/5">
               <div className="px-5 py-4 flex items-center justify-between">
-                <div>
+                <div className="flex flex-col gap-1">
                   <div className="text-sm text-zinc-100 font-light">
                     Frontend Interview
                   </div>
-                  <div className="text-xs font-mono text-zinc-500 mt-1">
-                    javascript · 2 people
+                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
+                    <span className="uppercase tracking-widest">
+                      javascript
+                    </span>
+                    <span className="text-zinc-700">·</span>
+                    <span>created 2 mins ago</span>
                   </div>
                 </div>
                 <span className="text-zinc-600 text-sm">→</span>
               </div>
               <div className="px-5 py-4 flex items-center justify-between">
-                <div>
+                <div className="flex flex-col gap-1">
                   <div className="text-sm text-zinc-100 font-light">
                     Backend Round
                   </div>
-                  <div className="text-xs font-mono text-zinc-500 mt-1">
-                    python · 1 person
+                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
+                    <span className="uppercase tracking-widest">python</span>
+                    <span className="text-zinc-700">·</span>
+                    <span>created 1 hour ago</span>
                   </div>
                 </div>
                 <span className="text-zinc-600 text-sm">→</span>
               </div>
               <div className="px-5 py-4 flex items-center justify-between">
-                <div>
+                <div className="flex flex-col gap-1">
                   <div className="text-sm text-zinc-100 font-light">
                     DSA Practice
                   </div>
-                  <div className="text-xs font-mono text-zinc-500 mt-1">
-                    cpp · 3 people
+                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
+                    <span className="uppercase tracking-widest">cpp</span>
+                    <span className="text-zinc-700">·</span>
+                    <span>created yesterday</span>
                   </div>
                 </div>
                 <span className="text-zinc-600 text-sm">→</span>
@@ -110,27 +114,24 @@ function RegisterPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-mono text-zinc-500">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-              <span className="uppercase tracking-widest">live</span>
-            </div>
-            <span className="text-zinc-700">·</span>
-            <span className="uppercase tracking-widest">shared cursors</span>
-            <span className="text-zinc-700">·</span>
-            <span className="uppercase tracking-widest">6 langs</span>
+          {/* Real feature list */}
+          <div className="flex flex-col gap-2.5">
+            <FeatureRow>Real-time collaborative editor</FeatureRow>
+            <FeatureRow>Live cursors with user awareness</FeatureRow>
+            <FeatureRow>Sandboxed code execution · 6 languages</FeatureRow>
+            <FeatureRow>Shared problem statement + chat</FeatureRow>
           </div>
         </div>
 
+        {/* Bottom — Tagline */}
         <div>
           <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
             Start hosting
             <br />
-            <span className="text-zinc-600">interviews.</span>
+            <span className="text-zinc-500">interviews.</span>
           </h1>
           <p className="text-sm font-light leading-relaxed text-zinc-400 max-w-md">
-            Create a room in seconds. Share a link. Run the whole interview in
-            one place.
+            Create. Invite. Interview.
           </p>
         </div>
       </div>
@@ -150,12 +151,9 @@ function RegisterPage() {
               </span>
             </div>
 
-            {/* Section marker */}
+            {/* Section marker — no step number */}
             <div className="flex items-center gap-4 mb-5">
-              <span className="text-xs font-mono text-zinc-500 border border-white/10 px-2 py-1 rounded-full">
-                01
-              </span>
-              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                 Register
               </span>
               <div className="h-px bg-white/10 flex-1" />
@@ -163,10 +161,10 @@ function RegisterPage() {
 
             {/* Heading */}
             <h2 className="text-2xl font-light tracking-tight text-zinc-100 leading-none mb-1.5">
-              Create an account.
+              Create your account.
             </h2>
             <p className="text-sm text-zinc-500 mb-6">
-              A few moments away from your first room.
+              Start conducting interviews.
             </p>
 
             <form
@@ -186,7 +184,6 @@ function RegisterPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="John Doe"
                   required
                   minLength={3}
                   className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
@@ -206,7 +203,6 @@ function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
                   required
                   className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
                 />
@@ -226,7 +222,6 @@ function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
                     required
                     minLength={6}
                     className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150 pr-16"
@@ -281,6 +276,16 @@ function RegisterPage() {
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Small helper — feature checkmark row ── */
+function FeatureRow({ children }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-zinc-500 text-sm font-mono">✓</span>
+      <span className="text-sm text-zinc-400 font-light">{children}</span>
     </div>
   );
 }

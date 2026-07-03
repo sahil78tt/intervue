@@ -46,16 +46,20 @@ function LoginPage() {
       {/* LEFT PANEL — Product showcase              */}
       {/* ═══════════════════════════════════════════ */}
       <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        {/* Top — Brand — BIG & BOLD */}
+        {/* Top — Brand */}
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
           <span className="text-2xl font-medium tracking-tight text-zinc-100">
             Intervue
           </span>
+          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest ml-2">
+            v1.0.0
+          </span>
         </div>
 
-        {/* Middle — Mock editor preview */}
-        <div className="my-8 flex flex-col gap-4">
+        {/* Middle — Editor preview + feature list */}
+        <div className="my-8 flex flex-col gap-6">
+          {/* Fake editor with interview-style code */}
           <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
             <div className="h-9 border-b border-white/5 flex items-center justify-between px-4">
               <div className="flex items-center gap-3">
@@ -63,9 +67,7 @@ function LoginPage() {
                   Editor
                 </span>
                 <div className="h-px w-4 bg-white/10" />
-                <span className="text-xs font-mono text-zinc-500">
-                  javascript
-                </span>
+                <span className="text-xs font-mono text-zinc-500">cpp</span>
               </div>
 
               <div className="flex -space-x-1.5">
@@ -80,78 +82,76 @@ function LoginPage() {
 
             <div className="p-5 font-mono text-[13px] leading-relaxed">
               <div className="text-zinc-600">
-                1 <span className="text-zinc-500">// two-sum problem</span>
+                1 <span className="text-zinc-500">// balanced binary tree</span>
               </div>
               <div className="text-zinc-600">
-                2 <span className="text-zinc-400">function</span>{" "}
-                <span className="text-zinc-100">twoSum</span>
-                <span className="text-zinc-500">(</span>
-                <span className="text-zinc-400">nums, target</span>
-                <span className="text-zinc-500">) {`{`}</span>
-              </div>
-              <div className="text-zinc-600">
-                3 <span className="text-zinc-400">const</span>{" "}
-                <span className="text-zinc-100">map</span>{" "}
-                <span className="text-zinc-500">=</span>{" "}
-                <span className="text-zinc-400">new</span>{" "}
-                <span className="text-zinc-100">Map</span>
-                <span className="text-zinc-500">();</span>
-              </div>
-              <div className="text-zinc-600">
-                4 <span className="text-zinc-400">for</span>{" "}
-                <span className="text-zinc-500">(</span>
-                <span className="text-zinc-400">let</span> i{" "}
-                <span className="text-zinc-500">=</span>{" "}
-                <span className="text-zinc-100">0</span>
-                <span className="text-zinc-500">;</span> i{" "}
-                <span className="text-zinc-500">&lt;</span> nums.length
-                <span className="text-zinc-500">;</span> i
-                <span className="text-zinc-500">++)</span>{" "}
+                2 <span className="text-zinc-400">class</span>{" "}
+                <span className="text-zinc-100">Solution</span>{" "}
                 <span className="text-zinc-500">{`{`}</span>
               </div>
               <div className="text-zinc-600">
-                5 <span className="text-zinc-400">const</span>{" "}
-                <span className="text-zinc-100">diff</span>{" "}
-                <span className="text-zinc-500">=</span> target{" "}
-                <span className="text-zinc-500">-</span> nums
-                <span className="text-zinc-500">[</span>i
-                <span className="text-zinc-500">];</span>
+                3 <span className="text-zinc-400">public</span>
+                <span className="text-zinc-500">:</span>
               </div>
               <div className="text-zinc-600">
-                6 <span className="text-zinc-400">if</span>{" "}
-                <span className="text-zinc-500">(</span>map.has
-                <span className="text-zinc-500">(</span>diff
-                <span className="text-zinc-500">))</span>{" "}
+                4 <span className="text-zinc-400">bool</span>{" "}
+                <span className="text-zinc-100">isBalanced</span>
+                <span className="text-zinc-500">(</span>
+                <span className="text-zinc-400">TreeNode</span>
+                <span className="text-zinc-500">*</span> root
+                <span className="text-zinc-500">)</span>{" "}
                 <span className="text-zinc-500">{`{`}</span>
               </div>
               <div className="text-zinc-600">
-                7 <span className="text-zinc-400">return</span>{" "}
-                <span className="text-zinc-500">[</span>map.get
-                <span className="text-zinc-500">(</span>diff
-                <span className="text-zinc-500">),</span> i
-                <span className="text-zinc-500">];</span>
+                5 <span className="text-zinc-400">if</span>{" "}
+                <span className="text-zinc-500">(!</span>root
+                <span className="text-zinc-500">)</span>{" "}
+                <span className="text-zinc-400">return</span>{" "}
+                <span className="text-zinc-100">true</span>
+                <span className="text-zinc-500">;</span>
               </div>
               <div className="text-zinc-600">
-                8 <span className="text-zinc-500">{`}`}</span>
+                6 <span className="text-zinc-400">int</span>{" "}
+                <span className="text-zinc-100">lh</span>{" "}
+                <span className="text-zinc-500">=</span>{" "}
+                <span className="text-zinc-100">height</span>
+                <span className="text-zinc-500">(</span>root
+                <span className="text-zinc-500">-&gt;</span>left
+                <span className="text-zinc-500">);</span>
+              </div>
+              <div className="text-zinc-600">
+                7 <span className="text-zinc-400">int</span>{" "}
+                <span className="text-zinc-100">rh</span>{" "}
+                <span className="text-zinc-500">=</span>{" "}
+                <span className="text-zinc-100">height</span>
+                <span className="text-zinc-500">(</span>root
+                <span className="text-zinc-500">-&gt;</span>right
+                <span className="text-zinc-500">);</span>
+              </div>
+              <div className="text-zinc-600">
+                8 <span className="text-zinc-400">return</span> abs
+                <span className="text-zinc-500">(</span>lh{" "}
+                <span className="text-zinc-500">-</span> rh
+                <span className="text-zinc-500">)</span>{" "}
+                <span className="text-zinc-500">&lt;=</span>{" "}
+                <span className="text-zinc-100">1</span>
+                <span className="text-zinc-500">;</span>
               </div>
               <div className="text-zinc-600">
                 9 <span className="text-zinc-500">{`}`}</span>
               </div>
               <div className="text-zinc-600">
-                10 <span className="text-zinc-500">{`}`}</span>
+                10 <span className="text-zinc-500">{`};`}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-mono text-zinc-500">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-              <span className="uppercase tracking-widest">2 active</span>
-            </div>
-            <span className="text-zinc-700">·</span>
-            <span className="uppercase tracking-widest">real-time sync</span>
-            <span className="text-zinc-700">·</span>
-            <span className="uppercase tracking-widest">6ms</span>
+          {/* Real feature list — replaces fake metadata */}
+          <div className="flex flex-col gap-2.5">
+            <FeatureRow>Real-time collaborative editor</FeatureRow>
+            <FeatureRow>Live cursors with user awareness</FeatureRow>
+            <FeatureRow>Sandboxed code execution · 6 languages</FeatureRow>
+            <FeatureRow>Shared problem statement + chat</FeatureRow>
           </div>
         </div>
 
@@ -160,11 +160,10 @@ function LoginPage() {
           <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
             Collaborative
             <br />
-            <span className="text-zinc-600">interviews.</span>
+            <span className="text-zinc-500">interviews.</span>
           </h1>
           <p className="text-sm font-light leading-relaxed text-zinc-400 max-w-md">
-            Real-time coding. Live cursors. Shared editor. Everything you need
-            to run a technical interview.
+            Create. Invite. Interview.
           </p>
         </div>
       </div>
@@ -176,7 +175,7 @@ function LoginPage() {
         {/* Form container */}
         <div className="flex-1 flex items-center justify-center px-8 py-8 overflow-y-auto">
           <div className="w-full max-w-sm">
-            {/* Mobile brand — visible only when left panel is hidden */}
+            {/* Mobile brand */}
             <div className="flex lg:hidden items-center gap-3 mb-8">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
               <span className="text-2xl font-medium tracking-tight text-zinc-100">
@@ -184,12 +183,9 @@ function LoginPage() {
               </span>
             </div>
 
-            {/* Section marker */}
+            {/* Section marker — no step number */}
             <div className="flex items-center gap-4 mb-6">
-              <span className="text-xs font-mono text-zinc-500 border border-white/10 px-2 py-1 rounded-full">
-                01
-              </span>
-              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                 Sign in
               </span>
               <div className="h-px bg-white/10 flex-1" />
@@ -199,9 +195,7 @@ function LoginPage() {
             <h2 className="text-3xl font-light tracking-tight text-zinc-100 leading-none mb-2">
               Welcome back.
             </h2>
-            <p className="text-sm text-zinc-500 mb-8">
-              Sign in to continue to your rooms.
-            </p>
+            <p className="text-sm text-zinc-500 mb-8">Sign in to continue.</p>
 
             <form
               onSubmit={handleSubmit}
@@ -220,7 +214,6 @@ function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
                   required
                   className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-3 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
                 />
@@ -240,7 +233,6 @@ function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
                     required
                     className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-3 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150 pr-16"
                   />
@@ -294,6 +286,16 @@ function LoginPage() {
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Small helper — feature checkmark row ── */
+function FeatureRow({ children }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-zinc-500 text-sm font-mono">✓</span>
+      <span className="text-sm text-zinc-400 font-light">{children}</span>
     </div>
   );
 }
