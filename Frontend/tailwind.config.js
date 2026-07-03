@@ -20,9 +20,17 @@ export default {
         "canvas-warm": "#fefefe",
         scrim: "#1a1a1a",
         footer: "#030303",
+
+        "nexus-bg": "#0a0a0a",
+        "nexus-surface": "#111111",
+        "nexus-border": "#262626",
+        "nexus-border-hi": "#404040",
+        "nexus-text": "#ffffff",
+        "nexus-muted": "#a1a1aa",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       borderRadius: {
         none: "0px",

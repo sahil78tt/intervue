@@ -1,7 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
 
-// Available languages — matches backend LANGUAGE_CONFIG
 const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
 
 function CreateRoomModal({ onClose, onRoomCreated }) {
@@ -23,11 +22,7 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
 
       const newRoom = response.data.data.room;
 
-      // Tell parent (Dashboard) a new room was created
-      // So it can update the list
       onRoomCreated(newRoom);
-
-      // Close the modal
       onClose();
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
@@ -41,32 +36,35 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
   };
 
   return (
-    // Backdrop — dimmed layer covering full screen
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center px-4 z-50"
       onClick={onClose}
     >
-      {/* Modal container — stops click from bubbling to backdrop */}
       <div
-        className="w-full max-w-md bg-white border border-gray-200 p-8"
+        className="w-full max-w-md bg-zinc-950 border border-white/10 p-8 rounded-2xl"
         onClick={function (e) {
           e.stopPropagation();
         }}
       >
-        {/* Heading */}
-        <h2
-          className="text-black font-normal mb-8"
-          style={{ fontSize: "24px", letterSpacing: "-0.5px", lineHeight: "1" }}
-        >
-          New room.
-        </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-light tracking-tight text-zinc-100">
+            New room.
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
+          >
+            close
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Name field */}
+          {/* Name */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="room-name"
-              className="text-black text-sm font-medium"
+              className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
             >
               Name
             </label>
@@ -80,15 +78,15 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
               placeholder="Frontend Interview"
               required
               autoFocus
-              className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
+              className="w-full bg-transparent text-zinc-100 text-base py-3 border-b border-white/10 placeholder:text-zinc-600 focus:border-white/30 transition-colors duration-150"
             />
           </div>
 
-          {/* Language selector */}
+          {/* Language */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="room-language"
-              className="text-black text-sm font-medium"
+              className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
             >
               Language
             </label>
@@ -98,11 +96,11 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
               onChange={function (e) {
                 setLanguage(e.target.value);
               }}
-              className="w-full bg-white text-black text-base py-3 border-b border-gray-300 focus:border-black transition-colors cursor-pointer"
+              className="w-full bg-zinc-900 text-zinc-100 text-base py-3 border-b border-white/10 focus:border-white/30 transition-colors duration-150 cursor-pointer font-mono rounded-none"
             >
               {LANGUAGES.map(function (lang) {
                 return (
-                  <option key={lang} value={lang}>
+                  <option key={lang} value={lang} className="bg-zinc-900">
                     {lang}
                   </option>
                 );
@@ -112,27 +110,25 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg">
+            <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
               {error}
             </p>
           )}
 
-          {/* Buttons row */}
+          {/* Buttons */}
           <div className="flex items-center gap-3 mt-2">
-            {/* Cancel — ghost button */}
             <button
               type="button"
               onClick={onClose}
-              className="h-10 px-6 text-black text-sm font-semibold border border-black rounded-full hover:bg-gray-50 transition-colors"
+              className="text-xs font-mono text-zinc-500 uppercase tracking-widest border border-white/10 px-5 py-3 rounded-full hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
             >
               Cancel
             </button>
 
-            {/* Create — primary button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 h-10 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isLoading ? "Creating..." : "Create room"}
             </button>

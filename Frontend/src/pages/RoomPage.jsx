@@ -42,7 +42,6 @@ function RoomPage() {
 
   const [copyStatus, setCopyStatus] = useState("copy link");
 
-  // ── Chat state ──
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState([]);
@@ -151,15 +150,12 @@ function RoomPage() {
     [user, room, shareLink],
   );
 
-  // ── Track incoming messages + unread count ──
   useEffect(
     function () {
       function handleIncoming(msg) {
-        // Always store the message
         setMessages(function (prev) {
           return [...prev, msg];
         });
-        // Only increment unread if panel is closed and it's not my own message
         if (!isChatOpen && msg.username !== user?.username) {
           setUnreadCount(function (prev) {
             return prev + 1;
@@ -323,21 +319,23 @@ function RoomPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Loading room...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">
+          Loading room...
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <p className="text-black text-lg">{error}</p>
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-6">
+        <p className="text-zinc-400 text-sm font-mono">{error}</p>
         <button
           onClick={function () {
             navigate("/dashboard");
           }}
-          className="h-10 px-6 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-900 transition-colors"
+          className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition-colors duration-150"
         >
           Back to dashboard
         </button>
@@ -346,23 +344,38 @@ function RoomPage() {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col relative">
-      <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200 flex-shrink-0">
-        <div className="flex items-center gap-6">
-          <span className="text-black text-xl font-semibold">Intervue</span>
-          <span className="text-gray-300">|</span>
-          <span className="text-black text-sm">{room.name}</span>
-          <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+    <div className="h-screen bg-zinc-950 flex flex-col relative">
+      {/* ── Navbar ── */}
+      <header className="h-12 flex items-center justify-between px-5 border-b border-white/5 flex-shrink-0 bg-zinc-950">
+        {/* Left */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={function () {
+              navigate("/dashboard");
+            }}
+            className="text-zinc-100 text-xs font-normal tracking-widest uppercase hover:text-zinc-400 transition-colors duration-150"
+          >
+            Intervue
+          </button>
+
+          <div className="h-px w-4 bg-white/10" />
+
+          <span className="text-zinc-500 text-xs font-mono truncate max-w-[160px]">
+            {room.name}
+          </span>
+
+          <span className="text-xs font-mono text-zinc-600 border border-white/10 px-2 py-0.5 rounded-full">
             {role}
           </span>
 
-          <div className="flex -space-x-2">
+          {/* Active users */}
+          <div className="flex -space-x-1.5 ml-2">
             {activeUsers.map(function (u, i) {
               return (
                 <div
                   key={i}
                   title={u.username}
-                  className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold border-2 border-white uppercase"
+                  className="w-6 h-6 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[8px] font-mono border border-zinc-950 uppercase"
                 >
                   {u.username.substring(0, 2)}
                 </div>
@@ -371,101 +384,123 @@ function RoomPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <button
-            onClick={handleToggleChat}
-            className="relative text-gray-500 text-sm font-semibold hover:text-black transition-colors"
-          >
-            chat
+        {/* Right */}
+        <div className="flex items-center gap-2">
+          {/* Chat */}
+          <div className="relative">
+            <button
+              onClick={handleToggleChat}
+              className={`text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150 ${
+                isChatOpen
+                  ? "border-white/20 text-zinc-100 bg-white/5"
+                  : "border-white/10 text-zinc-500 hover:text-zinc-100 hover:bg-white/5"
+              }`}
+            >
+              chat
+            </button>
             {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-zinc-100 text-zinc-950 text-[8px] font-bold flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
-          </button>
+          </div>
 
+          {/* Copy link */}
           <button
             onClick={handleCopyLink}
-            className="text-gray-500 text-sm font-semibold hover:text-black transition-colors"
+            className="text-xs font-mono text-zinc-500 uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
           >
             {copyStatus}
           </button>
 
+          {/* Run */}
           <button
-            onClick={function () {
-              navigate("/dashboard");
-            }}
-            className="text-gray-500 text-sm font-semibold hover:text-black transition-colors"
+            onClick={handleRunCode}
+            disabled={isRunning}
+            className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            ← back
+            {isRunning ? "Running..." : "Run"}
           </button>
         </div>
       </header>
 
+      {/* ── Body ── */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col border-r border-gray-200 overflow-hidden">
-          <div className="h-12 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
-            <select
-              value={language}
-              onChange={function (e) {
-                setLanguage(e.target.value);
-              }}
-              className="text-xs text-black uppercase tracking-wider font-medium bg-white cursor-pointer hover:text-gray-500 transition-colors"
-            >
-              {LANGUAGES.map(function (lang) {
-                return (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                );
-              })}
-            </select>
-
-            <button
-              onClick={handleRunCode}
-              disabled={isRunning}
-              className="h-8 px-4 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRunning ? "Running..." : "Run code"}
-            </button>
+        {/* ── LEFT — Editor ── */}
+        <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden">
+          {/* Editor toolbar */}
+          <div className="h-9 flex items-center justify-between px-4 border-b border-white/5 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+                Editor
+              </span>
+              <div className="h-px w-4 bg-white/10" />
+              <select
+                value={language}
+                onChange={function (e) {
+                  setLanguage(e.target.value);
+                }}
+                className="text-xs font-mono text-zinc-400 bg-transparent cursor-pointer hover:text-zinc-100 transition-colors duration-150 appearance-none uppercase tracking-widest"
+              >
+                {LANGUAGES.map(function (lang) {
+                  return (
+                    <option
+                      key={lang}
+                      value={lang}
+                      className="bg-zinc-900 normal-case"
+                    >
+                      {lang}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
+
+          {/* Monaco */}
           <div className="flex-1 overflow-hidden">
             <Editor
               height="100%"
               language={language}
               onMount={handleEditorMount}
-              theme="vs"
+              theme="vs-dark"
               options={{
-                fontSize: 14,
-                fontFamily: "'Fira Code', 'Consolas', monospace",
+                fontSize: 13,
+                fontFamily:
+                  "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 padding: { top: 16 },
                 lineNumbers: "on",
-                renderLineHighlight: "none",
+                renderLineHighlight: "line",
                 overviewRulerBorder: false,
                 hideCursorInOverviewRuler: true,
+                automaticLayout: true,
               }}
             />
           </div>
         </div>
 
-        <div className="w-[400px] flex flex-col">
-          <div className="flex-1 border-b border-gray-200 p-6 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+        {/* ── RIGHT — Problem + Output ── */}
+        <div className="w-[400px] flex flex-col bg-zinc-950">
+          {/* Problem panel */}
+          <div className="flex-1 border-b border-white/5 flex flex-col overflow-hidden">
+            <div className="h-9 flex items-center justify-between px-4 border-b border-white/5 flex-shrink-0">
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
                 Problem
-              </p>
+              </span>
+
               {role === "host" && !isEditingProblem && (
                 <button
                   onClick={function () {
                     setIsEditingProblem(true);
                   }}
-                  className="text-xs text-gray-500 font-semibold hover:text-black transition-colors"
+                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
                 >
                   {problemStatement ? "edit" : "+ add"}
                 </button>
               )}
+
               {role === "host" && isEditingProblem && (
                 <div className="flex items-center gap-3">
                   <button
@@ -473,14 +508,14 @@ function RoomPage() {
                       setProblemStatement(room.problem_statement || "");
                       setIsEditingProblem(false);
                     }}
-                    className="text-xs text-gray-500 font-semibold hover:text-black transition-colors"
+                    className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
                   >
                     cancel
                   </button>
                   <button
                     onClick={handleSaveProblem}
                     disabled={problemSaving}
-                    className="h-7 px-3 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50"
+                    className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-3 py-1 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40"
                   >
                     {problemSaving ? "..." : "save"}
                   </button>
@@ -488,57 +523,67 @@ function RoomPage() {
               )}
             </div>
 
-            {isEditingProblem ? (
-              <textarea
-                value={problemStatement}
-                onChange={function (e) {
-                  setProblemStatement(e.target.value);
-                }}
-                placeholder="Type the problem statement here..."
-                autoFocus
-                rows={12}
-                className="w-full text-sm text-black bg-white border border-gray-200 p-3 resize-none focus:border-black transition-colors font-mono"
-              />
-            ) : problemStatement ? (
-              <pre className="text-sm text-black whitespace-pre-wrap break-words font-sans">
-                {problemStatement}
-              </pre>
-            ) : (
-              <p className="text-gray-400 text-sm">
-                {role === "host"
-                  ? "No problem yet. Click + add to write one."
-                  : "The host has not set a problem yet."}
-              </p>
-            )}
+            <div className="flex-1 overflow-y-auto p-4">
+              {isEditingProblem ? (
+                <textarea
+                  value={problemStatement}
+                  onChange={function (e) {
+                    setProblemStatement(e.target.value);
+                  }}
+                  placeholder="Type the problem statement here..."
+                  autoFocus
+                  rows={12}
+                  className="w-full text-sm text-zinc-100 bg-transparent border border-white/10 p-3 resize-none focus:border-white/20 transition-colors duration-150 font-mono rounded-lg"
+                />
+              ) : problemStatement ? (
+                <pre className="text-sm text-zinc-400 whitespace-pre-wrap break-words font-sans leading-relaxed">
+                  {problemStatement}
+                </pre>
+              ) : (
+                <p className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
+                  {role === "host"
+                    ? "No problem yet. Click + add to write one."
+                    : "The host has not set a problem yet."}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 p-6 overflow-y-auto">
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">
-              Output
-            </p>
-            {isRunning && (
-              <p className="text-gray-400 text-sm">Running your code...</p>
-            )}
-            {!isRunning && outputError && (
-              <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg">
-                {outputError}
-              </p>
-            )}
-            {!isRunning && !outputError && output && (
-              <pre className="text-sm text-black font-mono whitespace-pre-wrap break-words">
-                {output}
-              </pre>
-            )}
-            {!isRunning && !outputError && !output && (
-              <p className="text-gray-400 text-sm">
-                Run your code to see output.
-              </p>
-            )}
+          {/* Output panel */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="h-9 flex items-center px-4 border-b border-white/5 flex-shrink-0">
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+                Output
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {isRunning && (
+                <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">
+                  Running your code...
+                </p>
+              )}
+              {!isRunning && outputError && (
+                <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
+                  {outputError}
+                </p>
+              )}
+              {!isRunning && !outputError && output && (
+                <pre className="text-sm text-zinc-400 font-mono whitespace-pre-wrap break-words leading-relaxed">
+                  {output}
+                </pre>
+              )}
+              {!isRunning && !outputError && !output && (
+                <p className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
+                  Run your code to see output.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Chat Drawer — floating on top ── */}
+      {/* Chat */}
       {isChatOpen && (
         <ChatPanel
           shareLink={shareLink}

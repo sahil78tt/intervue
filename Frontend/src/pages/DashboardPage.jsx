@@ -19,20 +19,16 @@ function DashboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  // Rooms state
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsError, setRoomsError] = useState("");
 
-  // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Join room state
   const [joinLink, setJoinLink] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
 
-  // Fetch user info on load
   useEffect(function () {
     const fetchUser = async function () {
       try {
@@ -52,7 +48,6 @@ function DashboardPage() {
     fetchUser();
   }, []);
 
-  // Fetch rooms on load
   useEffect(function () {
     const fetchRooms = async function () {
       try {
@@ -69,27 +64,22 @@ function DashboardPage() {
     fetchRooms();
   }, []);
 
-  // Sign out
   const handleSignOut = function () {
     logout();
     navigate("/login");
   };
 
-  // Called by modal when a new room is created
   const handleRoomCreated = function (newRoom) {
     const roomWithCount = { ...newRoom, participant_count: 1 };
     setRooms([roomWithCount, ...rooms]);
   };
 
-  // Delete room with confirmation
   const handleDeleteRoom = async function (roomId, roomName, e) {
-    // Prevent room click from firing (don't navigate to room)
     e.stopPropagation();
     const confirmed = window.confirm('Delete room "' + roomName + '"?');
     if (!confirmed) return;
     try {
       await api.delete("/rooms/" + roomId);
-      // Remove from local state — no need to re-fetch
       setRooms(
         rooms.filter(function (r) {
           return r.id !== roomId;
@@ -101,7 +91,6 @@ function DashboardPage() {
     }
   };
 
-  // Handle joining a room by share link
   const handleJoinRoom = async function (e) {
     e.preventDefault();
     setJoinError("");
@@ -130,26 +119,32 @@ function DashboardPage() {
     }
   };
 
-  // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Loading...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">
+          Loading...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
       {/* Navbar */}
-      <header className="h-16 flex items-center justify-between px-8 border-b border-gray-200">
-        <span className="text-black text-xl font-semibold">Intervue</span>
+      <header className="h-16 flex items-center justify-between px-8 border-b border-white/5">
+        <span className="text-zinc-100 text-xs font-normal tracking-widest uppercase">
+          Intervue
+        </span>
 
         <div className="flex items-center gap-6">
-          <span className="text-gray-500 text-sm">{user && user.username}</span>
+          <span className="text-xs font-mono text-zinc-500">
+            {user && user.username}
+          </span>
+          <div className="h-px w-6 bg-white/10" />
           <button
             onClick={handleSignOut}
-            className="text-gray-500 text-sm font-semibold hover:text-black transition-colors"
+            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
           >
             sign out
           </button>
@@ -161,51 +156,46 @@ function DashboardPage() {
         <div className="max-w-4xl mx-auto">
           {/* Section header */}
           <div className="flex items-center justify-between mb-12">
-            <h1
-              className="text-black font-normal"
-              style={{
-                fontSize: "40px",
-                letterSpacing: "-1px",
-                lineHeight: "1",
-              }}
-            >
-              Your rooms.
+            <h1 className="text-5xl font-light tracking-tight text-zinc-100 leading-none">
+              Your
+              <br />
+              <span className="text-zinc-600">rooms.</span>
             </h1>
 
             <button
               onClick={function () {
                 setShowCreateModal(true);
               }}
-              className="h-10 px-6 bg-black text-white text-sm font-semibold rounded-full hover:bg-gray-900 transition-colors"
+              className="flex items-center justify-center gap-3 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition-colors duration-150"
             >
               + New room
             </button>
           </div>
 
-          <div className="border-t border-gray-200 mb-8"></div>
+          <div className="border-t border-white/5 mb-8" />
 
-          {/* State 1: Loading */}
+          {/* Loading */}
           {roomsLoading && (
-            <p className="text-gray-400 text-sm py-16 text-center">
+            <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest py-16 text-center">
               Loading rooms...
             </p>
           )}
 
-          {/* State 2: Error */}
+          {/* Error */}
           {!roomsLoading && roomsError && (
-            <p className="text-black text-sm bg-gray-100 px-4 py-3 rounded-lg">
+            <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
               {roomsError}
             </p>
           )}
 
-          {/* State 3: Empty */}
+          {/* Empty */}
           {!roomsLoading && !roomsError && rooms.length === 0 && (
-            <p className="text-gray-400 text-sm py-16 text-center">
+            <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest py-16 text-center">
               No rooms yet. Create your first room to get started.
             </p>
           )}
 
-          {/* State 4: Rooms exist */}
+          {/* Rooms list */}
           {!roomsLoading && !roomsError && rooms.length > 0 && (
             <div className="flex flex-col">
               {rooms.map(function (room) {
@@ -215,42 +205,43 @@ function DashboardPage() {
                     onClick={function () {
                       navigate("/room/" + room.share_link);
                     }}
-                    className="group flex items-center justify-between py-6 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer px-4 -mx-4"
+                    className="group flex items-center justify-between py-6 border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-150 cursor-pointer px-4 -mx-4"
                   >
+                    {/* Left */}
                     <div className="flex flex-col gap-2">
-                      <h3 className="text-black text-lg font-normal">
+                      <h3 className="text-zinc-100 text-base font-light tracking-tight">
                         {room.name}
                       </h3>
 
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className="uppercase tracking-wider font-medium">
+                      <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
+                        <span className="uppercase tracking-widest">
                           {room.language}
                         </span>
-                        <span>·</span>
+                        <span className="text-zinc-700">·</span>
                         <span>
                           {Number(room.participant_count)}{" "}
                           {Number(room.participant_count) === 1
                             ? "person"
                             : "people"}
                         </span>
-                        <span>·</span>
+                        <span className="text-zinc-700">·</span>
                         <span>
                           {new Date(room.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
 
-                    {/* Right side — delete button (visible on hover) + arrow */}
+                    {/* Right */}
                     <div className="flex items-center gap-6">
                       <button
                         onClick={function (e) {
                           handleDeleteRoom(room.id, room.name, e);
                         }}
-                        className="text-xs text-gray-400 hover:text-black font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-xs font-mono text-zinc-600 hover:text-zinc-100 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-150"
                       >
                         delete
                       </button>
-                      <span className="text-gray-400 text-xl">→</span>
+                      <span className="text-zinc-600 text-sm">→</span>
                     </div>
                   </div>
                 );
@@ -258,17 +249,23 @@ function DashboardPage() {
             </div>
           )}
 
-          {/* Join room section */}
-          <div className="mt-16 pt-12 border-t border-gray-200">
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-6">
-              or join a room
-            </p>
+          {/* Join room */}
+          <div className="mt-16 pt-12 border-t border-white/5">
+            <div className="flex items-center gap-4 mb-8">
+              <span className="text-xs font-mono text-zinc-500 border border-white/10 px-2 py-1 rounded-full">
+                02
+              </span>
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
+                Join a room
+              </span>
+              <div className="h-px bg-white/10 flex-1" />
+            </div>
 
             <form onSubmit={handleJoinRoom} className="flex items-end gap-4">
               <div className="flex-1 flex flex-col gap-2">
                 <label
                   htmlFor="join-link"
-                  className="text-black text-sm font-medium"
+                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
                 >
                   Share link
                 </label>
@@ -281,21 +278,21 @@ function DashboardPage() {
                   }}
                   placeholder="Enter room ID or link"
                   required
-                  className="w-full bg-white text-black text-base py-3 border-b border-gray-300 placeholder:text-gray-400 focus:border-black transition-colors"
+                  className="w-full bg-transparent text-zinc-100 text-base py-3 border-b border-white/10 placeholder:text-zinc-600 focus:border-white/30 transition-colors duration-150 font-mono"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={joinLoading}
-                className="h-10 px-6 text-black text-sm font-semibold border border-black rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs font-mono text-zinc-500 uppercase tracking-widest border border-white/10 px-5 py-3 rounded-full hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {joinLoading ? "Joining..." : "Join"}
               </button>
             </form>
 
             {joinError && (
-              <p className="text-sm text-black bg-gray-100 px-4 py-3 rounded-lg mt-4">
+              <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg mt-4 font-mono">
                 {joinError}
               </p>
             )}
@@ -303,7 +300,6 @@ function DashboardPage() {
         </div>
       </main>
 
-      {/* Create Room Modal */}
       {showCreateModal && (
         <CreateRoomModal
           onClose={function () {
