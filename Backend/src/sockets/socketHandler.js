@@ -63,7 +63,6 @@ export const setupSocketHandlers = function (io) {
 
     socket.on("chat:send", function (data) {
       const { shareLink, username, message } = data;
-
       if (!message || message.trim() === "") return;
 
       const messageObject = {
@@ -73,15 +72,52 @@ export const setupSocketHandlers = function (io) {
         timestamp: new Date().toISOString(),
       };
 
-      console.log(`💬 [${shareLink}] ${username}: ${message}`);
-
+      console.log(`[${shareLink}] ${username}: ${message}`);
       io.to(shareLink).emit("chat:received", messageObject);
+    });
+
+    socket.on("webrtc:offer", function (data) {
+      const { shareLink, offer } = data;
+      console.log(`WebRTC offer from ${socket.id} in room ${shareLink}`);
+      socket.to(shareLink).emit("webrtc:offer", {
+        offer: offer,
+        fromSocketId: socket.id,
+      });
+    });
+
+    socket.on("webrtc:answer", function (data) {
+      const { shareLink, answer } = data;
+      console.log(`WebRTC answer from ${socket.id} in room ${shareLink}`);
+      socket.to(shareLink).emit("webrtc:answer", {
+        answer: answer,
+        fromSocketId: socket.id,
+      });
+    });
+
+    socket.on("webrtc:ice-candidate", function (data) {
+      const { shareLink, candidate } = data;
+      console.log(`ICE candidate from ${socket.id} in room ${shareLink}`);
+      socket.to(shareLink).emit("webrtc:ice-candidate", {
+        candidate: candidate,
+        fromSocketId: socket.id,
+      });
+    });
+
+    socket.on("webrtc:leave", function (data) {
+      const { shareLink } = data;
+      console.log(`WebRTC leave from ${socket.id} in room ${shareLink}`);
+      socket.to(shareLink).emit("webrtc:leave", {
+        fromSocketId: socket.id,
+      });
     });
 
     socket.on("disconnect", function () {
       console.log("❌ User disconnected:", socket.id);
       const affectedRooms = removeUserFromAllRooms(socket.id);
       affectedRooms.forEach(function (shareLink) {
+        socket.to(shareLink).emit("webrtc:leave", {
+          fromSocketId: socket.id,
+        });
         io.to(shareLink).emit("room-users", roomUsers[shareLink] || []);
       });
     });

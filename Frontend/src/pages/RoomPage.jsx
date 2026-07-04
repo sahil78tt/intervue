@@ -5,6 +5,9 @@ import Editor from "@monaco-editor/react";
 import socket from "../lib/socket";
 import useAuthStore from "../store/authStore";
 import ChatPanel from "../components/ChatPanel";
+import VideoOverlay from "../components/VideoOverlay";
+import useWebRTC from "../hooks/useWebRTC";
+import HintModal from "../components/HintModal";
 
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
@@ -12,7 +15,6 @@ import { MonacoBinding } from "y-monaco";
 
 const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
 
-// Pretty labels for languages
 const LANGUAGE_LABELS = {
   javascript: "JavaScript",
   python: "Python",
@@ -35,7 +37,7 @@ function RoomPage() {
 
   const [editorInstance, setEditorInstance] = useState(null);
   const [language, setLanguage] = useState("javascript");
-  const [syncStatus, setSyncStatus] = useState("connecting"); // connecting | synced
+  const [syncStatus, setSyncStatus] = useState("connecting");
 
   const [problemStatement, setProblemStatement] = useState("");
   const [isEditingProblem, setIsEditingProblem] = useState(false);
@@ -44,7 +46,7 @@ function RoomPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState("");
   const [outputError, setOutputError] = useState("");
-  const [lastRunMeta, setLastRunMeta] = useState(null); // { execTime, memory }
+  const [lastRunMeta, setLastRunMeta] = useState(null);
 
   const [room, setRoom] = useState(null);
   const [role, setRole] = useState("");
@@ -54,16 +56,40 @@ function RoomPage() {
 
   const [copyStatus, setCopyStatus] = useState("Invite");
 
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState([]);
-
-  // Sidebar tabs: "problem" | "output" | "chat"
+  const [unreadCount, setUnreadCount] = useState(0);
   const [activeTab, setActiveTab] = useState("problem");
+
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [hint, setHint] = useState("");
+  const [hintLoading, setHintLoading] = useState(false);
+  const [hintError, setHintError] = useState("");
+
+  const {
+    localStream,
+    remoteStream,
+    isMicOn,
+    isCameraOn,
+    callStatus,
+    toggleMic,
+    toggleCamera,
+    leaveCall,
+  } = useWebRTC(shareLink, user?.username);
+
+  // Find the remote user's name from the active users list.
+  // It's whoever is in the room that isn't us.
+  const remoteUsername =
+    activeUsers.find(function (u) {
+      return u.username !== user?.username;
+    })?.username || "Interviewer";
+
+  // ── Editor mount ───────────────────────────────────────────────
 
   const handleEditorMount = function (editor) {
     setEditorInstance(editor);
   };
+
+  // ── Fetch room ─────────────────────────────────────────────────
 
   useEffect(
     function () {
@@ -88,6 +114,8 @@ function RoomPage() {
     [shareLink],
   );
 
+  // ── Fetch user if missing (page refresh) ──────────────────────
+
   useEffect(function () {
     const fetchUser = async function () {
       if (user) return;
@@ -103,6 +131,8 @@ function RoomPage() {
     fetchUser();
   }, []);
 
+  // ── Sync room data into local state ───────────────────────────
+
   useEffect(
     function () {
       if (room) {
@@ -112,6 +142,8 @@ function RoomPage() {
     },
     [room],
   );
+
+  // ── Socket.io presence + problem sync ─────────────────────────
 
   useEffect(
     function () {
@@ -165,13 +197,14 @@ function RoomPage() {
     [user, room, shareLink],
   );
 
+  // ── Chat messages ──────────────────────────────────────────────
+
   useEffect(
     function () {
       function handleIncoming(msg) {
         setMessages(function (prev) {
           return [...prev, msg];
         });
-        // Increment unread only if chat tab isn't currently open AND it's not from me
         if (activeTab !== "chat" && msg.username !== user?.username) {
           setUnreadCount(function (prev) {
             return prev + 1;
@@ -185,6 +218,8 @@ function RoomPage() {
     },
     [activeTab, user],
   );
+
+  // ── Yjs collaborative editing ──────────────────────────────────
 
   useEffect(
     function () {
@@ -239,6 +274,8 @@ function RoomPage() {
     [room, shareLink, editorInstance, user],
   );
 
+  // ── Helpers ────────────────────────────────────────────────────
+
   function getStarterCode(lang) {
     const starters = {
       javascript:
@@ -267,8 +304,7 @@ function RoomPage() {
     for (let i = 0; i < username.length; i++) {
       hash = username.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
+    return colors[Math.abs(hash) % colors.length];
   }
 
   const handleSaveProblem = async function () {
@@ -277,12 +313,10 @@ function RoomPage() {
       await api.patch("/rooms/" + shareLink + "/problem", {
         problem_statement: problemStatement,
       });
-
       socket.emit("problem-updated", {
         shareLink: shareLink,
         problem_statement: problemStatement,
       });
-
       setIsEditingProblem(false);
     } catch (err) {
       console.log("Save problem error:", err.message);
@@ -297,7 +331,7 @@ function RoomPage() {
     setOutput("");
     setOutputError("");
     setLastRunMeta(null);
-    setActiveTab("output"); // Auto-jump to output tab
+    setActiveTab("output");
 
     const currentCode = editorInstance ? editorInstance.getValue() : "";
     const startTime = Date.now();
@@ -309,7 +343,6 @@ function RoomPage() {
       });
       const result = response.data.data;
       setOutput(result.output);
-      // Fake metadata for now — Judge0 migration would give real values
       setLastRunMeta({
         execTime: Date.now() - startTime + " ms",
         memory: "—",
@@ -340,10 +373,37 @@ function RoomPage() {
     if (tab === "chat") setUnreadCount(0);
   };
 
-  const handleHint = function () {
-    // Stub for AI Hint feature — will wire in Phase B
-    alert("AI Hint coming soon! (Phase B feature)");
+  const handleHint = async function () {
+    // Open modal immediately in loading state
+    setIsHintOpen(true);
+    setHintLoading(true);
+    setHint("");
+    setHintError("");
+
+    // Grab current code from editor
+    const currentCode = editorInstance ? editorInstance.getValue() : "";
+
+    try {
+      const response = await api.post("/hint", {
+        problem_statement: problemStatement,
+        code: currentCode,
+        language: language,
+      });
+
+      setHint(response.data.data.hint);
+    } catch (err) {
+      console.log("Hint error:", err.message);
+      if (err.response && err.response.data && err.response.data.message) {
+        setHintError(err.response.data.message);
+      } else {
+        setHintError("Failed to get hint. Try again.");
+      }
+    } finally {
+      setHintLoading(false);
+    }
   };
+
+  // ── Loading + error states ─────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -377,9 +437,8 @@ function RoomPage() {
       {/* NAVBAR                                       */}
       {/* ═══════════════════════════════════════════ */}
       <header className="h-14 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 bg-zinc-950">
-        {/* Left cluster — brand + context */}
+        {/* Left cluster */}
         <div className="flex items-center gap-5">
-          {/* Brand */}
           <button
             onClick={function () {
               navigate("/dashboard");
@@ -394,7 +453,6 @@ function RoomPage() {
 
           <div className="h-6 w-px bg-white/10" />
 
-          {/* Room context */}
           <div className="flex flex-col leading-none">
             <span className="text-zinc-100 text-sm font-light">
               {room.name}
@@ -441,7 +499,7 @@ function RoomPage() {
           </div>
         </div>
 
-        {/* Right cluster — actions */}
+        {/* Right cluster */}
         <div className="flex items-center gap-2">
           {/* AI Hint */}
           <button
@@ -461,7 +519,59 @@ function RoomPage() {
 
           <div className="h-6 w-px bg-white/10 mx-1" />
 
-          {/* Run — primary action */}
+          {/* ── Mic toggle ── */}
+          {/* Only shows when we have a local stream (call is active) */}
+          {localStream && (
+            <button
+              onClick={toggleMic}
+              title={isMicOn ? "Mute mic" : "Unmute mic"}
+              className={`
+                text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150
+                ${
+                  isMicOn
+                    ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
+                    : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
+                }
+              `}
+            >
+              {isMicOn ? "Mic" : "Mic Off"}
+            </button>
+          )}
+
+          {/* ── Camera toggle ── */}
+          {/* Only shows when we have a local stream (call is active) */}
+          {localStream && (
+            <button
+              onClick={toggleCamera}
+              title={isCameraOn ? "Turn off camera" : "Turn on camera"}
+              className={`
+                text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150
+                ${
+                  isCameraOn
+                    ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
+                    : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
+                }
+              `}
+            >
+              {isCameraOn ? "Cam" : "Cam Off"}
+            </button>
+          )}
+
+          {/* ── Leave call ── */}
+          {/* Only shows when call is active */}
+          {localStream && (
+            <button
+              onClick={leaveCall}
+              title="Leave call"
+              className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
+            >
+              Leave
+            </button>
+          )}
+
+          <div className="h-6 w-px bg-white/10 mx-1" />
+
+          {/* Run — primary action, always rightmost */}
           <button
             onClick={handleRunCode}
             disabled={isRunning}
@@ -477,17 +587,15 @@ function RoomPage() {
       {/* BODY                                         */}
       {/* ═══════════════════════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ── LEFT — Editor ── */}
-        <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden bg-zinc-900/30">
+        {/* ── LEFT — Editor (relative so VideoOverlay anchors here) ── */}
+        <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden bg-zinc-900/30 relative">
           {/* Editor toolbar */}
           <div className="h-10 flex items-center justify-between px-5 border-b border-white/5 flex-shrink-0 bg-zinc-950">
             <div className="flex items-center gap-4">
               <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                 Editor
               </span>
-
               <div className="h-4 w-px bg-white/10" />
-
               <select
                 value={language}
                 onChange={function (e) {
@@ -542,6 +650,18 @@ function RoomPage() {
               }}
             />
           </div>
+
+          {/* ── VideoOverlay — absolute anchored to editor area ── */}
+          {/* Renders only when localStream exists (call has started) */}
+          <VideoOverlay
+            localStream={localStream}
+            remoteStream={remoteStream}
+            isMicOn={isMicOn}
+            isCameraOn={isCameraOn}
+            callStatus={callStatus}
+            username={user?.username}
+            remoteUsername={remoteUsername}
+          />
         </div>
 
         {/* ── RIGHT — Tabbed Sidebar ── */}
@@ -556,7 +676,6 @@ function RoomPage() {
             >
               Problem
             </TabButton>
-
             <TabButton
               active={activeTab === "output"}
               onClick={function () {
@@ -565,7 +684,6 @@ function RoomPage() {
             >
               Output
             </TabButton>
-
             <TabButton
               active={activeTab === "chat"}
               onClick={function () {
@@ -577,12 +695,9 @@ function RoomPage() {
             </TabButton>
           </div>
 
-          {/* ── Tab content ── */}
-
           {/* PROBLEM TAB */}
           {activeTab === "problem" && (
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Header row */}
               <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
@@ -630,7 +745,6 @@ function RoomPage() {
 
               <div className="h-px bg-white/5 flex-shrink-0" />
 
-              {/* Content */}
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 {isEditingProblem ? (
                   <textarea
@@ -670,11 +784,8 @@ function RoomPage() {
                   Output
                 </span>
               </div>
-
               <div className="h-px bg-white/5 flex-shrink-0" />
-
               <div className="flex-1 overflow-y-auto px-5 py-4">
-                {/* Running */}
                 {isRunning && (
                   <div className="flex flex-col gap-2">
                     <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
@@ -686,7 +797,6 @@ function RoomPage() {
                   </div>
                 )}
 
-                {/* Error */}
                 {!isRunning && outputError && (
                   <div className="flex flex-col gap-3">
                     <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
@@ -698,18 +808,14 @@ function RoomPage() {
                   </div>
                 )}
 
-                {/* Success */}
                 {!isRunning && !outputError && output && (
                   <div className="flex flex-col gap-5">
-                    {/* Status pill */}
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
                       <span className="text-[10px] font-mono text-emerald-500/80 uppercase tracking-widest">
                         Accepted
                       </span>
                     </div>
-
-                    {/* stdout block */}
                     <div className="flex flex-col gap-2">
                       <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
                         stdout
@@ -718,8 +824,6 @@ function RoomPage() {
                         {output}
                       </pre>
                     </div>
-
-                    {/* Meta blocks */}
                     {lastRunMeta && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1 border border-white/10 rounded-lg p-3">
@@ -743,7 +847,6 @@ function RoomPage() {
                   </div>
                 )}
 
-                {/* Empty */}
                 {!isRunning && !outputError && !output && (
                   <div className="flex flex-col gap-2 py-4">
                     <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
@@ -768,6 +871,19 @@ function RoomPage() {
               />
             </div>
           )}
+          {/* ═══════════════════════════════════════════ */}
+          {/* HINT MODAL                                   */}
+          {/* ═══════════════════════════════════════════ */}
+          <HintModal
+            isOpen={isHintOpen}
+            isLoading={hintLoading}
+            hint={hint}
+            error={hintError}
+            onClose={function () {
+              setIsHintOpen(false);
+            }}
+            onRegenerate={handleHint}
+          />
         </div>
       </div>
     </div>
@@ -778,7 +894,6 @@ function RoomPage() {
 /* Helper components                                   */
 /* ══════════════════════════════════════════════════ */
 
-// Tab button — reusable
 function TabButton({ active, onClick, children, badge }) {
   return (
     <button
@@ -800,7 +915,6 @@ function TabButton({ active, onClick, children, badge }) {
   );
 }
 
-// Extract problem title (first line) and body (rest)
 function getProblemTitle(text) {
   const lines = text.trim().split("\n");
   return lines[0] || "Untitled";
@@ -812,7 +926,6 @@ function getProblemBody(text) {
   return lines.slice(1).join("\n").trim();
 }
 
-// Inline chat panel — same logic as ChatPanel but embedded in sidebar
 function ChatPanelInline({ shareLink, username, messages }) {
   const [inputText, setInputText] = useState("");
   const bottomRef = useRef(null);
@@ -862,17 +975,13 @@ function ChatPanelInline({ shareLink, username, messages }) {
           Chat
         </span>
       </div>
-
       <div className="h-px bg-white/5 flex-shrink-0" />
-
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         {messages.length === 0 && (
           <p className="text-zinc-600 text-xs font-mono">
             No messages yet. Say hello.
           </p>
         )}
-
         {messages.map(function (msg) {
           const isMe = msg.username === username;
           return (
@@ -896,8 +1005,6 @@ function ChatPanelInline({ shareLink, username, messages }) {
         })}
         <div ref={bottomRef} />
       </div>
-
-      {/* Input */}
       <div className="p-4 border-t border-white/5 flex-shrink-0">
         <textarea
           rows={2}
