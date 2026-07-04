@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
 import executeRoutes from "./routes/execution.routes.js";
 import { setupSocketHandlers } from "./sockets/socketHandler.js";
+import hintRoutes from "./routes/hint.routes.js";
 
 // Configs
 dotenv.config({ quiet: true });
@@ -34,6 +35,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/execute", executeRoutes);
+app.use("/api/hint", hintRoutes);
 
 // Socket Connection
 const httpServer = createServer(app);
