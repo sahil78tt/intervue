@@ -1,34 +1,119 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import { toastSuccess, toastError } from "../lib/toast";
 
 function RegisterPage() {
-  const navigate = useNavigate();
-  const setUser = useAuthStore((state) => state.setUser);
+  var navigate = useNavigate();
+  var setUser = useAuthStore(function (state) {
+    return state.setUser;
+  });
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  var [view, setView] = useState("options");
+  var [username, setUsername] = useState("");
+  var [email, setEmail] = useState("");
+  var [password, setPassword] = useState("");
+  var [showPassword, setShowPassword] = useState(false);
+  var [error, setError] = useState("");
+  var [isLoading, setIsLoading] = useState(false);
+  var [fadeClass, setFadeClass] = useState("opacity-0 translate-y-2");
 
-  const handleSubmit = async (e) => {
+  var usernameRef = useRef(null);
+  var emailRef = useRef(null);
+  var passwordRef = useRef(null);
+
+  useEffect(function () {
+    var timer = setTimeout(function () {
+      setFadeClass("opacity-100 translate-y-0");
+    }, 50);
+    return function () {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function transitionTo(nextView) {
+    setFadeClass("opacity-0 translate-y-2");
+    setError("");
+
+    setTimeout(function () {
+      setView(nextView);
+      setFadeClass("opacity-100 translate-y-0");
+
+      setTimeout(function () {
+        if (nextView === "username" && usernameRef.current) {
+          usernameRef.current.focus();
+        }
+        if (nextView === "email" && emailRef.current) {
+          emailRef.current.focus();
+        }
+        if (nextView === "password" && passwordRef.current) {
+          passwordRef.current.focus();
+        }
+      }, 300);
+    }, 200);
+  }
+
+  function handleUsernameContinue(e) {
     e.preventDefault();
     setError("");
+
+    if (!username.trim()) {
+      setError("Please enter a username.");
+      return;
+    }
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters.");
+      return;
+    }
+
+    transitionTo("email");
+  }
+
+  function handleEmailContinue(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    transitionTo("password");
+  }
+
+  async function handleCreateAccount(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!password) {
+      setError("Please enter a password.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/register", {
+      var response = await api.post("/auth/register", {
         username: username,
         email: email,
         password: password,
       });
 
-      const user = response.data.data.user;
-      const token = response.data.data.token;
+      var user = response.data.data.user;
+      var token = response.data.data.token;
 
       setUser(user, token);
       toastSuccess(
@@ -37,7 +122,7 @@ function RegisterPage() {
       );
       navigate("/dashboard");
     } catch (err) {
-      const errorMsg =
+      var errorMsg =
         err.response?.data?.message ||
         "Something went wrong. Please try again.";
       setError(errorMsg);
@@ -45,229 +130,245 @@ function RegisterPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="h-screen bg-zinc-950 flex overflow-hidden">
-      <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-          <span className="text-2xl font-medium tracking-tight text-zinc-100">
-            Intervue
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 relative">
+      {/* Main container */}
+      <div
+        className={
+          "w-full max-w-[340px] flex flex-col items-center transition-all duration-500 ease-out " +
+          fadeClass
+        }
+      >
+        {/* Logo */}
+        <div className="mb-8 select-none">
+          <span className="text-ink text-[32px] font-semibold tracking-tight">
+            Intervue<span className="text-primary">.</span>
           </span>
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest ml-2">
-            v1.0.0
-          </span>
         </div>
 
-        <div className="my-8 flex flex-col gap-6">
-          <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
-            <div className="h-9 border-b border-white/5 flex items-center px-4">
-              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-                Your rooms
-              </span>
-            </div>
+        {/* Heading */}
+        <h1 className="text-[18px] font-medium text-ink mb-8 tracking-tight">
+          {view === "options" && "Create your Intervue account"}
+          {view === "username" && "Pick a username"}
+          {view === "email" && "What's your email?"}
+          {view === "password" && "Create a password"}
+        </h1>
 
-            <div className="divide-y divide-white/5">
-              <div className="px-5 py-4 flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                  <div className="text-sm text-zinc-100 font-light">
-                    Frontend Interview
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
-                    <span className="uppercase tracking-widest">
-                      javascript
-                    </span>
-                    <span className="text-zinc-700">·</span>
-                    <span>created 2 mins ago</span>
-                  </div>
-                </div>
-                <span className="text-zinc-600 text-sm">→</span>
-              </div>
-              <div className="px-5 py-4 flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                  <div className="text-sm text-zinc-100 font-light">
-                    Backend Round
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
-                    <span className="uppercase tracking-widest">python</span>
-                    <span className="text-zinc-700">·</span>
-                    <span>created 1 hour ago</span>
-                  </div>
-                </div>
-                <span className="text-zinc-600 text-sm">→</span>
-              </div>
-              <div className="px-5 py-4 flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                  <div className="text-sm text-zinc-100 font-light">
-                    DSA Practice
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
-                    <span className="uppercase tracking-widest">cpp</span>
-                    <span className="text-zinc-700">·</span>
-                    <span>created yesterday</span>
-                  </div>
-                </div>
-                <span className="text-zinc-600 text-sm">→</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            <FeatureRow>Real-time collaborative editor</FeatureRow>
-            <FeatureRow>Live cursors with user awareness</FeatureRow>
-            <FeatureRow>Sandboxed code execution · 6 languages</FeatureRow>
-            <FeatureRow>Shared problem statement + chat</FeatureRow>
-          </div>
-        </div>
-
-        <div>
-          <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
-            Start hosting
-            <br />
-            <span className="text-zinc-500">interviews.</span>
-          </h1>
-          <p className="text-sm font-light leading-relaxed text-zinc-400 max-w-md">
-            Create. Invite. Interview.
-          </p>
-        </div>
-      </div>
-
-      <div className="w-full lg:w-2/5 flex flex-col h-screen">
-        <div className="flex-1 flex items-center justify-center px-8 py-6 overflow-y-auto">
-          <div className="w-full max-w-sm">
-            <div className="flex lg:hidden items-center gap-3 mb-8">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-              <span className="text-2xl font-medium tracking-tight text-zinc-100">
-                Intervue
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 mb-5">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                Register
-              </span>
-              <div className="h-px bg-white/10 flex-1" />
-            </div>
-
-            <h2 className="text-2xl font-light tracking-tight text-zinc-100 leading-none mb-1.5">
-              Create your account.
-            </h2>
-            <p className="text-sm text-zinc-500 mb-6">
-              Start conducting interviews.
-            </p>
-
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-3.5 w-full"
+        {/* ──── VIEW 1: OPTIONS ──── */}
+        {view === "options" && (
+          <div className="w-full flex flex-col gap-2.5">
+            <button
+              onClick={function () {
+                transitionTo("username");
+              }}
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150"
             >
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="username"
-                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                >
-                  Username
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  minLength={3}
-                  className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
-                />
-              </div>
+              Continue with email
+            </button>
 
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="email"
-                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
-                />
-              </div>
+            <button
+              onClick={function () {
+                navigate("/login");
+              }}
+              className="w-full bg-surface-1 hover:bg-surface-2 text-ink text-[14px] font-medium py-3 rounded-full border border-hairline transition-colors duration-150"
+            >
+              I already have an account
+            </button>
 
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="password"
-                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                >
-                  Password
-                </label>
-                <div className="relative w-full">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150 pr-16"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-100 text-xs font-mono uppercase tracking-widest transition-colors duration-150"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-2.5 rounded-lg font-mono">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+            <p className="text-center mt-5 text-[13px] text-ink-subtle">
+              Already registered?{" "}
+              <Link
+                to="/login"
+                className="text-ink font-medium hover:text-primary transition-colors duration-150"
               >
-                {isLoading ? "Creating account..." : "Create account"}
-              </button>
-
-              <p className="text-xs font-mono text-zinc-600 text-center mt-3">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-zinc-100 hover:text-white transition-colors duration-150"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </form>
+                Sign in
+              </Link>
+            </p>
           </div>
-        </div>
+        )}
 
-        <div className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-            v1.0.0
-          </span>
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-            © {new Date().getFullYear()} Intervue
-          </span>
-        </div>
+        {/* ──── VIEW 2: USERNAME ──── */}
+        {view === "username" && (
+          <form
+            onSubmit={handleUsernameContinue}
+            className="w-full flex flex-col gap-2.5"
+          >
+            <input
+              ref={usernameRef}
+              type="text"
+              value={username}
+              onChange={function (e) {
+                setUsername(e.target.value);
+              }}
+              placeholder="Choose a username"
+              autoComplete="username"
+              minLength={3}
+              className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+            />
+
+            {error && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150"
+            >
+              Continue
+            </button>
+
+            <button
+              type="button"
+              onClick={function () {
+                transitionTo("options");
+              }}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium py-2 transition-colors duration-150"
+            >
+              ← Back
+            </button>
+          </form>
+        )}
+
+        {/* ──── VIEW 3: EMAIL ──── */}
+        {view === "email" && (
+          <form
+            onSubmit={handleEmailContinue}
+            className="w-full flex flex-col gap-2.5"
+          >
+            {/* Username chip */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-5 h-5 rounded-full bg-surface-3 border border-hairline flex items-center justify-center">
+                <span className="text-[9px] font-mono text-ink-muted uppercase">
+                  {username.charAt(0)}
+                </span>
+              </div>
+              <span className="text-[13px] text-ink-muted truncate max-w-[240px]">
+                {username}
+              </span>
+            </div>
+
+            <input
+              ref={emailRef}
+              type="email"
+              value={email}
+              onChange={function (e) {
+                setEmail(e.target.value);
+              }}
+              placeholder="you@example.com"
+              autoComplete="email"
+              className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+            />
+
+            {error && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150"
+            >
+              Continue
+            </button>
+
+            <button
+              type="button"
+              onClick={function () {
+                transitionTo("username");
+              }}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium py-2 transition-colors duration-150"
+            >
+              ← Back
+            </button>
+          </form>
+        )}
+
+        {/* ──── VIEW 4: PASSWORD ──── */}
+        {view === "password" && (
+          <form
+            onSubmit={handleCreateAccount}
+            className="w-full flex flex-col gap-2.5"
+          >
+            {/* Email chip */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-5 h-5 rounded-full bg-surface-3 border border-hairline flex items-center justify-center">
+                <span className="text-[9px] font-mono text-ink-muted uppercase">
+                  {email.charAt(0)}
+                </span>
+              </div>
+              <span className="text-[13px] text-ink-muted truncate max-w-[240px]">
+                {email}
+              </span>
+            </div>
+
+            <div className="relative w-full">
+              <input
+                ref={passwordRef}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={function (e) {
+                  setPassword(e.target.value);
+                }}
+                placeholder="Min. 6 characters"
+                autoComplete="new-password"
+                minLength={6}
+                className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 pr-16 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+              />
+              <button
+                type="button"
+                onClick={function () {
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-ink-tertiary hover:text-ink uppercase tracking-wider transition-colors duration-150"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {error && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Creating account..." : "Create account"}
+            </button>
+
+            <button
+              type="button"
+              onClick={function () {
+                transitionTo("email");
+              }}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium py-2 transition-colors duration-150"
+            >
+              ← Back
+            </button>
+          </form>
+        )}
       </div>
-    </div>
-  );
-}
 
-function FeatureRow({ children }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-zinc-500 text-sm font-mono">✓</span>
-      <span className="text-sm text-zinc-400 font-light">{children}</span>
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 h-10 flex items-center justify-between px-6">
+        <span className="text-[11px] font-mono text-ink-tertiary tracking-wider">
+          v1.0.0
+        </span>
+        <span className="text-[11px] font-mono text-ink-tertiary tracking-wider">
+          © {new Date().getFullYear()} Intervue
+        </span>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Folder, LogIn, Plus, ArrowRight, Clock } from "lucide-react";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import CreateRoomModal from "../components/CreateRoomModal";
@@ -20,24 +21,30 @@ function DashboardPage() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsError, setRoomsError] = useState("");
-
   const [showCreateModal, setShowCreateModal] = useState(false);
-
   const [joinLink, setJoinLink] = useState("");
-  const [joinError, setJoinError] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
-
   const [copiedRoomId, setCopiedRoomId] = useState(null);
-
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("rooms");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fadeClass, setFadeClass] = useState("opacity-0 translate-y-2");
 
   useEffect(function () {
-    const fetchUser = async function () {
+    const timer = setTimeout(function () {
+      setFadeClass("opacity-100 translate-y-0");
+    }, 50);
+    return function () {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(function () {
+    async function fetchUser() {
       try {
         const response = await api.get("/auth/me");
         const userData = response.data.data.user;
@@ -50,13 +57,12 @@ function DashboardPage() {
       } finally {
         setIsLoading(false);
       }
-    };
-
+    }
     fetchUser();
   }, []);
 
   useEffect(function () {
-    const fetchRooms = async function () {
+    async function fetchRooms() {
       try {
         const response = await api.get("/rooms/my");
         setRooms(response.data.data.rooms);
@@ -67,28 +73,35 @@ function DashboardPage() {
       } finally {
         setRoomsLoading(false);
       }
-    };
-
+    }
     fetchRooms();
   }, []);
 
-  const handleSignOut = function () {
+  function transitionTab(newTab) {
+    setFadeClass("opacity-0 translate-y-2");
+    setTimeout(function () {
+      setActiveTab(newTab);
+      setFadeClass("opacity-100 translate-y-0");
+    }, 200);
+  }
+
+  function handleSignOut() {
     logout();
     toastSuccess("SIGNED OUT", "See you next time.");
     navigate("/login");
-  };
+  }
 
-  const handleRoomCreated = function (newRoom) {
+  function handleRoomCreated(newRoom) {
     const roomWithCount = { ...newRoom, participant_count: 1 };
     setRooms([roomWithCount, ...rooms]);
-  };
+  }
 
-  const handleDeleteClick = function (room, e) {
+  function handleDeleteClick(room, e) {
     e.stopPropagation();
     setDeleteTarget(room);
-  };
+  }
 
-  const handleConfirmDelete = async function () {
+  async function handleConfirmDelete() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
     try {
@@ -106,9 +119,9 @@ function DashboardPage() {
     } finally {
       setDeleteLoading(false);
     }
-  };
+  }
 
-  const handleCopyLink = function (shareLink, roomId, e) {
+  function handleCopyLink(shareLink, roomId, e) {
     e.stopPropagation();
     const fullLink = window.location.origin + "/room/" + shareLink;
     navigator.clipboard.writeText(fullLink);
@@ -117,34 +130,28 @@ function DashboardPage() {
     setTimeout(function () {
       setCopiedRoomId(null);
     }, 2000);
-  };
+  }
 
-  const handleJoinRoom = async function (e) {
+  async function handleJoinRoom(e) {
     e.preventDefault();
-    setJoinError("");
     setJoinLoading(true);
-
     try {
       let shareLink = joinLink.trim();
-
       if (shareLink.includes("/")) {
         const parts = shareLink.split("/");
         shareLink = parts[parts.length - 1];
       }
-
       const response = await api.post("/rooms/join/" + shareLink);
       const room = response.data.data.room;
-
       toastSuccess("JOINED ROOM", "Redirecting to " + room.name + "...");
       navigate("/room/" + room.share_link);
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Failed to join room.";
-      setJoinError(errorMsg);
       toastError("JOIN FAILED", errorMsg);
     } finally {
       setJoinLoading(false);
     }
-  };
+  }
 
   function formatRelativeDate(dateStr) {
     const date = new Date(dateStr);
@@ -153,7 +160,6 @@ function DashboardPage() {
     const diffMin = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
     if (diffMin < 1) return "just now";
     if (diffMin < 60) return diffMin + "m ago";
     if (diffHours < 24) return diffHours + "h ago";
@@ -162,24 +168,27 @@ function DashboardPage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
-  function formatExpiry(createdAt) {
+  function isRoomActive(createdAt) {
     const created = new Date(createdAt);
     const expires = new Date(created.getTime() + 24 * 60 * 60 * 1000);
-    const now = new Date();
-    const remainingMs = expires - now;
-
-    if (remainingMs <= 0) return "expired";
-    const remainingHours = Math.floor(remainingMs / 3600000);
-    const remainingMin = Math.floor((remainingMs % 3600000) / 60000);
-
-    if (remainingHours >= 1) return remainingHours + "h left";
-    return remainingMin + "m left";
+    return new Date() < expires;
   }
+
+  const filteredRooms = rooms.filter(function (room) {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      room.name.toLowerCase().includes(q) ||
+      room.language.toLowerCase().includes(q)
+    );
+  });
+
+  const recentRooms = rooms.slice(0, 3);
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
-        <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">
+      <div className="h-screen bg-canvas flex items-center justify-center">
+        <p className="text-ink-tertiary text-[11px] font-mono uppercase tracking-widest">
           Loading...
         </p>
       </div>
@@ -187,247 +196,392 @@ function DashboardPage() {
   }
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
-      <header className="h-14 flex items-center justify-between px-8 border-b border-white/5 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-          <span className="text-xl font-medium tracking-tight text-zinc-100">
-            Intervue
+    <div className="h-screen bg-canvas flex overflow-hidden">
+      {/* ═══════════════════════════ SIDEBAR (200px) ═══════════════════════════ */}
+      <aside className="w-[200px] flex-shrink-0 border-r border-hairline flex flex-col bg-canvas">
+        {/* Logo */}
+        <div className="h-12 flex items-center px-4 border-b border-hairline">
+          <span className="text-ink text-[15px] font-semibold tracking-tight select-none">
+            Intervue<span className="text-primary">.</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[10px] font-mono uppercase">
+        {/* Nav */}
+        <nav className="flex-1 p-2.5 flex flex-col gap-0.5 overflow-y-auto">
+          <div className="px-2.5 py-1.5 mb-0.5">
+            <span className="text-[10px] font-medium text-ink-tertiary uppercase tracking-widest">
+              Workspace
+            </span>
+          </div>
+
+          <button
+            onClick={function () {
+              transitionTab("rooms");
+            }}
+            className={
+              "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 " +
+              (activeTab === "rooms"
+                ? "bg-surface-2 text-ink"
+                : "text-ink-subtle hover:bg-surface-1 hover:text-ink")
+            }
+          >
+            <Folder size={14} strokeWidth={2} />
+            <span>My rooms</span>
+            {rooms.length > 0 && (
+              <span className="ml-auto text-[11px] text-ink-tertiary font-mono">
+                {rooms.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={function () {
+              transitionTab("join");
+            }}
+            className={
+              "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 " +
+              (activeTab === "join"
+                ? "bg-surface-2 text-ink"
+                : "text-ink-subtle hover:bg-surface-1 hover:text-ink")
+            }
+          >
+            <LogIn size={14} strokeWidth={2} />
+            <span>Join a room</span>
+          </button>
+
+          <button
+            onClick={function () {
+              setShowCreateModal(true);
+            }}
+            className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium text-ink-subtle hover:bg-surface-1 hover:text-ink transition-colors duration-150"
+          >
+            <Plus size={14} strokeWidth={2.5} className="text-primary" />
+            <span>New room</span>
+          </button>
+
+          {/* Recent activity */}
+          {recentRooms.length > 0 && (
+            <>
+              <div className="px-2.5 py-1.5 mt-5 mb-0.5 flex items-center gap-1.5">
+                <Clock
+                  size={10}
+                  strokeWidth={2}
+                  className="text-ink-tertiary"
+                />
+                <span className="text-[10px] font-medium text-ink-tertiary uppercase tracking-widest">
+                  Recent
+                </span>
+              </div>
+
+              {recentRooms.map(function (room) {
+                const active = isRoomActive(room.created_at);
+                return (
+                  <button
+                    key={room.id}
+                    onClick={function () {
+                      navigate("/room/" + room.share_link);
+                    }}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-ink-subtle hover:bg-surface-1 hover:text-ink transition-colors duration-150 group"
+                    title={room.name}
+                  >
+                    <div
+                      className={
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0 " +
+                        (active ? "bg-semantic-success" : "bg-ink-tertiary")
+                      }
+                    />
+                    <span className="truncate">{room.name}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
+        </nav>
+
+        {/* User at bottom */}
+        <div className="p-2.5 border-t border-hairline">
+          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-surface-1 transition-colors duration-150">
+            <div className="w-7 h-7 rounded-full bg-surface-3 border border-hairline flex items-center justify-center text-[10px] font-mono uppercase text-ink-muted flex-shrink-0">
               {user && user.username ? user.username.substring(0, 2) : "??"}
             </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-sm text-zinc-100 font-light">
+            <div className="flex flex-col leading-none min-w-0 flex-1">
+              <span className="text-[12px] text-ink font-medium truncate">
                 {user && user.username}
               </span>
-              <span className="text-[10px] font-mono text-zinc-500 mt-0.5">
+              <span className="text-[10px] font-mono text-ink-tertiary truncate mt-0.5">
                 {user && user.email}
               </span>
             </div>
           </div>
 
-          <div className="h-6 w-px bg-white/10" />
-
           <button
             onClick={handleSignOut}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
+            className="w-full mt-1 flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-ink-tertiary hover:bg-surface-1 hover:text-ink transition-colors duration-150"
           >
             Sign out
           </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="flex-1 px-8 py-6 overflow-hidden">
-        <div className="max-w-6xl mx-auto h-full flex flex-col">
-          <div className="flex items-end justify-between mb-3 flex-shrink-0">
-            <div>
-              <h1 className="text-3xl font-light tracking-tight text-zinc-100 leading-none">
-                Your rooms.
-              </h1>
-              <p className="text-sm text-zinc-500 mt-2 max-w-md">
-                Real-time collaborative interviews with a shared editor, live
-                cursors, and sandboxed code execution.
-              </p>
-            </div>
+      {/* ═══════════════════════════ MAIN ═══════════════════════════ */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar (48px) */}
+        <div className="h-12 border-b border-hairline flex items-center justify-between px-6 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-ink-tertiary uppercase tracking-widest">
+              Workspace
+            </span>
+            <span className="text-ink-tertiary text-[11px]">/</span>
+            <span className="text-[13px] text-ink font-medium">
+              {activeTab === "rooms" ? "My rooms" : "Join a room"}
+            </span>
+            {activeTab === "rooms" && rooms.length > 0 && (
+              <span className="bg-surface-2 text-ink-muted text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-hairline">
+                {rooms.length}
+              </span>
+            )}
+          </div>
 
+          {activeTab === "rooms" && (
             <button
               onClick={function () {
                 setShowCreateModal(true);
               }}
-              className="flex items-center justify-center gap-2 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-5 py-2.5 rounded-full hover:bg-white/10 transition-colors duration-150 flex-shrink-0"
+              className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[12px] font-medium px-3 py-1.5 rounded-full transition-colors duration-150"
             >
-              + New room
+              <Plus size={12} strokeWidth={2.5} />
+              <span>New room</span>
             </button>
-          </div>
+          )}
+        </div>
 
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 mt-4">
-            <div className="lg:col-span-2 flex flex-col min-h-0">
-              <div className="flex items-center gap-4 mb-4 flex-shrink-0">
-                <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                  Rooms{" "}
-                  {!roomsLoading && rooms.length > 0 && (
-                    <span className="text-zinc-600">· {rooms.length}</span>
-                  )}
-                </span>
-                <div className="h-px bg-white/10 flex-1" />
-              </div>
-
-              {roomsLoading && (
-                <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest py-8">
-                  Loading rooms...
-                </p>
-              )}
-
-              {!roomsLoading && roomsError && (
-                <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
-                  {roomsError}
-                </p>
-              )}
-
-              {!roomsLoading && !roomsError && rooms.length === 0 && (
-                <div className="border border-dashed border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center gap-4 text-center">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-zinc-100 text-base font-light">
-                      No rooms yet.
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                      Create your first interview room to get started.
-                    </p>
+        {/* Content with fade animation */}
+        <div className="flex-1 overflow-y-auto">
+          <div className={"transition-all duration-300 ease-out " + fadeClass}>
+            {/* ────────── TAB: ROOMS ────────── */}
+            {activeTab === "rooms" && (
+              <div className="max-w-[880px] mx-auto px-6 py-6">
+                {/* Search */}
+                {!roomsLoading && rooms.length > 0 && (
+                  <div className="mb-5">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={function (e) {
+                        setSearchQuery(e.target.value);
+                      }}
+                      placeholder="Filter rooms by name or language..."
+                      className="w-full bg-surface-1 border border-hairline text-ink text-[13px] px-4 py-2.5 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150"
+                    />
                   </div>
-                  <button
-                    onClick={function () {
-                      setShowCreateModal(true);
-                    }}
-                    className="flex items-center justify-center gap-2 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-5 py-2.5 rounded-full hover:bg-white/10 transition-colors duration-150"
-                  >
-                    + Create room
-                  </button>
-                </div>
-              )}
+                )}
 
-              {!roomsLoading && !roomsError && rooms.length > 0 && (
-                <div className="flex-1 overflow-y-auto pr-1 -mr-1">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                    {rooms.map(function (room) {
+                {/* Loading */}
+                {roomsLoading && (
+                  <p className="text-ink-tertiary text-[11px] font-mono uppercase tracking-widest py-8 text-center">
+                    Loading rooms...
+                  </p>
+                )}
+
+                {/* Error */}
+                {!roomsLoading && roomsError && (
+                  <div className="flex items-center gap-2 bg-surface-1 border border-hairline px-4 py-3 rounded-lg">
+                    <div className="w-1 h-1 rounded-full bg-red-500/70" />
+                    <p className="text-[13px] text-ink-muted">{roomsError}</p>
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {!roomsLoading && !roomsError && rooms.length === 0 && (
+                  <div className="border border-dashed border-hairline rounded-xl p-12 flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="w-12 h-12 rounded-full bg-surface-1 border border-hairline flex items-center justify-center">
+                      <Plus
+                        size={18}
+                        strokeWidth={2}
+                        className="text-primary"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-ink text-[15px] font-medium">
+                        No rooms yet
+                      </p>
+                      <p className="text-[13px] text-ink-subtle max-w-xs">
+                        Create your first interview room to start collaborating.
+                      </p>
+                    </div>
+                    <button
+                      onClick={function () {
+                        setShowCreateModal(true);
+                      }}
+                      className="bg-primary hover:bg-primary-hover text-white text-[13px] font-medium px-4 py-2 rounded-full transition-colors duration-150 mt-2"
+                    >
+                      Create your first room
+                    </button>
+                  </div>
+                )}
+
+                {/* No search results */}
+                {!roomsLoading &&
+                  !roomsError &&
+                  rooms.length > 0 &&
+                  filteredRooms.length === 0 && (
+                    <p className="text-ink-tertiary text-[13px] py-8 text-center">
+                      No rooms match "{searchQuery}".
+                    </p>
+                  )}
+
+                {/* Rooms list */}
+                {!roomsLoading && !roomsError && filteredRooms.length > 0 && (
+                  <div className="border border-hairline rounded-xl overflow-hidden bg-surface-1">
+                    {filteredRooms.map(function (room, idx) {
                       const isCopied = copiedRoomId === room.id;
+                      const active = isRoomActive(room.created_at);
                       return (
                         <div
                           key={room.id}
-                          className="border border-white/10 hover:border-white/20 rounded-2xl p-5 transition-colors duration-150 flex flex-col gap-4 bg-zinc-900/20"
+                          onClick={function () {
+                            navigate("/room/" + room.share_link);
+                          }}
+                          className={
+                            "group flex items-center gap-4 px-5 py-4 hover:bg-surface-2 cursor-pointer transition-colors duration-150 " +
+                            (idx !== filteredRooms.length - 1
+                              ? "border-b border-hairline"
+                              : "")
+                          }
                         >
-                          <div className="flex flex-col gap-2">
-                            <h3 className="text-zinc-100 text-base font-light tracking-tight leading-tight truncate">
-                              {room.name}
-                            </h3>
+                          <div className="flex-shrink-0">
+                            <div
+                              className={
+                                "w-2 h-2 rounded-full " +
+                                (active
+                                  ? "bg-semantic-success"
+                                  : "bg-ink-tertiary")
+                              }
+                            />
+                          </div>
 
-                            <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 flex-wrap">
-                              <span className="uppercase tracking-widest">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2.5">
+                              <h3 className="text-ink text-[14px] font-medium truncate">
+                                {room.name}
+                              </h3>
+                              <span className="bg-surface-2 text-ink-muted text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border border-hairline flex-shrink-0">
                                 {room.language}
                               </span>
-                              <span className="text-zinc-700">·</span>
-                              <span>{formatRelativeDate(room.created_at)}</span>
-                              <span className="text-zinc-700">·</span>
-                              <span className="text-zinc-600">
-                                {formatExpiry(room.created_at)}
-                              </span>
                             </div>
+                            <p className="text-[12px] text-ink-tertiary font-mono mt-1">
+                              {formatRelativeDate(room.created_at)}
+                              {!active && (
+                                <span className="text-red-500/60">
+                                  {" "}
+                                  · expired
+                                </span>
+                              )}
+                            </p>
                           </div>
 
-                          <div className="h-px bg-white/5" />
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <button
-                                onClick={function (e) {
-                                  handleCopyLink(room.share_link, room.id, e);
-                                }}
-                                className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
-                              >
-                                {isCopied ? "Copied ✓" : "Copy"}
-                              </button>
-
-                              <button
-                                onClick={function (e) {
-                                  handleDeleteClick(room, e);
-                                }}
-                                className="text-xs font-mono text-zinc-600 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
-                              >
-                                Delete
-                              </button>
-                            </div>
-
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                             <button
-                              onClick={function () {
-                                navigate("/room/" + room.share_link);
+                              onClick={function (e) {
+                                handleCopyLink(room.share_link, room.id, e);
                               }}
-                              className="flex items-center gap-1.5 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors duration-150"
+                              className="text-[11px] font-medium text-ink-subtle hover:text-ink px-2.5 py-1.5 rounded-full hover:bg-surface-3 transition-colors duration-150"
                             >
-                              Open
-                              <span className="text-sm">→</span>
+                              {isCopied ? "Copied ✓" : "Copy link"}
+                            </button>
+                            <button
+                              onClick={function (e) {
+                                handleDeleteClick(room, e);
+                              }}
+                              className="text-[11px] font-medium text-ink-subtle hover:text-red-400 px-2.5 py-1.5 rounded-full hover:bg-surface-3 transition-colors duration-150"
+                            >
+                              Delete
                             </button>
                           </div>
+
+                          <ArrowRight
+                            size={14}
+                            strokeWidth={2}
+                            className="text-ink-tertiary group-hover:text-ink transition-colors duration-150"
+                          />
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
-            </div>
-
-            <div className="lg:col-span-1 flex flex-col min-h-0">
-              <div className="flex items-center gap-4 mb-4 flex-shrink-0">
-                <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                  Join a room
-                </span>
-                <div className="h-px bg-white/10 flex-1" />
+                )}
               </div>
+            )}
 
-              <div className="border border-white/10 rounded-2xl p-5 bg-zinc-900/20 flex flex-col">
-                <div className="mb-4">
-                  <h3 className="text-zinc-100 text-base font-light tracking-tight mb-1">
-                    Join with invite link
-                  </h3>
-                  <p className="text-xs text-zinc-500">
-                    Paste a link shared by the host.
+            {/* ────────── TAB: JOIN ────────── */}
+            {activeTab === "join" && (
+              <div className="max-w-[560px] mx-auto px-6 py-16">
+                <div className="flex flex-col items-center text-center mb-8">
+                  <div className="w-12 h-12 rounded-full bg-surface-1 border border-hairline flex items-center justify-center mb-4">
+                    <LogIn size={18} strokeWidth={2} className="text-primary" />
+                  </div>
+                  <h2 className="text-[24px] font-semibold text-ink tracking-tight mb-2">
+                    Join a room
+                  </h2>
+                  <p className="text-[13px] text-ink-subtle max-w-sm">
+                    Paste an invite link shared by the host to join an interview
+                    room.
                   </p>
                 </div>
 
-                <form onSubmit={handleJoinRoom} className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="join-link"
-                      className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                    >
-                      Invite link
-                    </label>
-                    <input
-                      id="join-link"
-                      type="text"
-                      value={joinLink}
-                      onChange={function (e) {
-                        setJoinLink(e.target.value);
-                      }}
-                      placeholder="Paste invite link"
-                      required
-                      className="w-full bg-zinc-900 text-zinc-100 text-sm px-3 py-2.5 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150 font-mono"
-                    />
-                  </div>
+                <form
+                  onSubmit={handleJoinRoom}
+                  className="flex flex-col gap-2.5"
+                >
+                  <input
+                    type="text"
+                    value={joinLink}
+                    onChange={function (e) {
+                      setJoinLink(e.target.value);
+                    }}
+                    placeholder="Paste invite link or share code"
+                    required
+                    className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+                  />
 
                   <button
                     type="submit"
                     disabled={joinLoading}
-                    className="w-full flex items-center justify-center gap-2 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-4 py-2.5 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {joinLoading ? "Joining..." : "Join room"}
-                    <span className="text-sm">→</span>
+                    <span>{joinLoading ? "Joining..." : "Join room"}</span>
+                    {!joinLoading && <ArrowRight size={14} strokeWidth={2.5} />}
                   </button>
                 </form>
 
-                {joinError && (
-                  <p className="text-xs text-zinc-400 bg-zinc-950 border border-white/10 px-3 py-2 rounded-lg mt-3 font-mono">
-                    {joinError}
-                  </p>
-                )}
+                <p className="mt-8 text-[12px] text-ink-tertiary text-center leading-relaxed">
+                  Don't have an invite link?{" "}
+                  <button
+                    onClick={function () {
+                      transitionTab("rooms");
+                      setShowCreateModal(true);
+                    }}
+                    className="text-ink hover:text-primary transition-colors duration-150 font-medium"
+                  >
+                    Create your own room
+                  </button>
+                </p>
               </div>
-            </div>
+            )}
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="h-9 flex items-center justify-between px-6 border-t border-hairline flex-shrink-0">
+          <span className="text-[10px] font-mono text-ink-tertiary tracking-wider">
+            v1.0.0
+          </span>
+          <span className="text-[10px] font-mono text-ink-tertiary tracking-wider">
+            © {new Date().getFullYear()} Intervue
+          </span>
         </div>
       </main>
 
-      <footer className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
-        <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-          v1.0.0
-        </span>
-        <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-          © {new Date().getFullYear()} Intervue
-        </span>
-      </footer>
-
+      {/* Modals */}
       {showCreateModal && (
         <CreateRoomModal
           onClose={function () {
@@ -447,7 +601,7 @@ function DashboardPage() {
               '"?\n\nThis action cannot be undone. Participants will lose access to this room.'
             : ""
         }
-        confirmLabel="delete room"
+        confirmLabel="Delete room"
         onConfirm={handleConfirmDelete}
         onClose={function () {
           setDeleteTarget(null);

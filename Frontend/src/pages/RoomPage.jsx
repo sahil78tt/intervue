@@ -4,11 +4,27 @@ import api from "../api/axios";
 import Editor from "@monaco-editor/react";
 import socket from "../lib/socket";
 import useAuthStore from "../store/authStore";
-import ChatPanel from "../components/ChatPanel";
 import VideoOverlay from "../components/VideoOverlay";
 import useWebRTC from "../hooks/useWebRTC";
 import HintModal from "../components/HintModal";
 import { toastSuccess, toastError } from "../lib/toast";
+import Dropdown from "../components/Dropdown";
+
+import {
+  FileText,
+  MessageSquare,
+  Users,
+  Sparkles,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  Play,
+  ChevronDown,
+  ChevronUp,
+  X,
+} from "lucide-react";
 
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
@@ -25,48 +41,64 @@ const LANGUAGE_LABELS = {
   typescript: "TypeScript",
 };
 
+const LANGUAGE_OPTIONS = LANGUAGES.map(function (lang) {
+  return {
+    value: lang,
+    label: LANGUAGE_LABELS[lang],
+  };
+});
+
 function RoomPage() {
-  const navigate = useNavigate();
-  const { shareLink } = useParams();
-  const user = useAuthStore(function (state) {
+  var navigate = useNavigate();
+  var { shareLink } = useParams();
+  var user = useAuthStore(function (state) {
     return state.user;
   });
 
-  const bindingRef = useRef(null);
-  const providerRef = useRef(null);
-  const ydocRef = useRef(null);
+  var bindingRef = useRef(null);
+  var providerRef = useRef(null);
+  var ydocRef = useRef(null);
+  var drawerRef = useRef(null);
+  var isDraggingRef = useRef(false);
 
-  const [editorInstance, setEditorInstance] = useState(null);
-  const [language, setLanguage] = useState("javascript");
-  const [syncStatus, setSyncStatus] = useState("connecting");
+  var [editorInstance, setEditorInstance] = useState(null);
+  var [language, setLanguage] = useState("javascript");
+  var [syncStatus, setSyncStatus] = useState("connecting");
 
-  const [problemStatement, setProblemStatement] = useState("");
-  const [isEditingProblem, setIsEditingProblem] = useState(false);
-  const [problemSaving, setProblemSaving] = useState(false);
+  var [problemStatement, setProblemStatement] = useState("");
+  var [isEditingProblem, setIsEditingProblem] = useState(false);
+  var [problemSaving, setProblemSaving] = useState(false);
 
-  const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState("");
-  const [outputError, setOutputError] = useState("");
-  const [lastRunMeta, setLastRunMeta] = useState(null);
+  var [isRunning, setIsRunning] = useState(false);
+  var [output, setOutput] = useState("");
+  var [outputError, setOutputError] = useState("");
+  var [lastRunMeta, setLastRunMeta] = useState(null);
 
-  const [room, setRoom] = useState(null);
-  const [role, setRole] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [activeUsers, setActiveUsers] = useState([]);
+  var [room, setRoom] = useState(null);
+  var [role, setRole] = useState("");
+  var [isLoading, setIsLoading] = useState(true);
+  var [error, setError] = useState("");
+  var [activeUsers, setActiveUsers] = useState([]);
 
-  const [copyStatus, setCopyStatus] = useState("Invite");
+  var [copyStatus, setCopyStatus] = useState("Invite");
 
-  const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [activeTab, setActiveTab] = useState("problem");
+  var [messages, setMessages] = useState([]);
+  var [chatInput, setChatInput] = useState("");
+  var [unreadCount, setUnreadCount] = useState(0);
 
-  const [isHintOpen, setIsHintOpen] = useState(false);
-  const [hint, setHint] = useState("");
-  const [hintLoading, setHintLoading] = useState(false);
-  const [hintError, setHintError] = useState("");
+  var [isHintOpen, setIsHintOpen] = useState(false);
+  var [hint, setHint] = useState("");
+  var [hintLoading, setHintLoading] = useState(false);
+  var [hintError, setHintError] = useState("");
 
-  const {
+  var [activePanel, setActivePanel] = useState("problem");
+  var [drawerHeight, setDrawerHeight] = useState(32);
+  var [drawerOpen, setDrawerOpen] = useState(false);
+  var [focusMode, setFocusMode] = useState(false);
+
+  var chatBottomRef = useRef(null);
+
+  var {
     localStream,
     remoteStream,
     isMicOn,
@@ -77,25 +109,25 @@ function RoomPage() {
     leaveCall,
   } = useWebRTC(shareLink, user?.username);
 
-  const remoteUsername =
+  var remoteUsername =
     activeUsers.find(function (u) {
       return u.username !== user?.username;
     })?.username || "Interviewer";
 
-  const handleEditorMount = function (editor) {
+  function handleEditorMount(editor) {
     setEditorInstance(editor);
-  };
+  }
 
   useEffect(
     function () {
-      const fetchRoom = async function () {
+      async function fetchRoom() {
         try {
-          const response = await api.get("/rooms/" + shareLink);
+          var response = await api.get("/rooms/" + shareLink);
           setRoom(response.data.data.room);
           setRole(response.data.data.role);
         } catch (err) {
           console.log("Fetch room error:", err.message);
-          if (err.response && err.response.data && err.response.data.message) {
+          if (err.response?.data?.message) {
             setError(err.response.data.message);
           } else {
             setError("Failed to load room.");
@@ -103,24 +135,24 @@ function RoomPage() {
         } finally {
           setIsLoading(false);
         }
-      };
+      }
       fetchRoom();
     },
     [shareLink],
   );
 
   useEffect(function () {
-    const fetchUser = async function () {
+    async function fetchUser() {
       if (user) return;
       try {
-        const response = await api.get("/auth/me");
-        const userData = response.data.data.user;
-        const token = localStorage.getItem("token");
+        var response = await api.get("/auth/me");
+        var userData = response.data.data.user;
+        var token = localStorage.getItem("token");
         useAuthStore.getState().setUser(userData, token);
       } catch (err) {
         console.log("Fetch user error:", err.message);
       }
-    };
+    }
     fetchUser();
   }, []);
 
@@ -140,19 +172,10 @@ function RoomPage() {
       socket.connect();
 
       socket.on("connect", function () {
-        console.log("✅ Connected to socket! ID:", socket.id);
         socket.emit("join-room", {
           shareLink: shareLink,
           username: user.username,
         });
-      });
-
-      socket.on("user-joined", function (data) {
-        console.log(`📥 ${data.username} joined the room`);
-      });
-
-      socket.on("user-left", function (data) {
-        console.log(`📤 ${data.username} left the room`);
       });
 
       socket.on("room-users", function (users) {
@@ -161,11 +184,6 @@ function RoomPage() {
 
       socket.on("problem-updated", function (data) {
         setProblemStatement(data.problem_statement);
-        console.log("📝 Problem updated by host");
-      });
-
-      socket.on("disconnect", function () {
-        console.log("❌ Disconnected from socket");
       });
 
       return function () {
@@ -174,13 +192,9 @@ function RoomPage() {
           username: user.username,
         });
         socket.off("connect");
-        socket.off("disconnect");
-        socket.off("user-joined");
-        socket.off("user-left");
         socket.off("room-users");
         socket.off("problem-updated");
         socket.disconnect();
-        console.log("Socket cleaned up");
       };
     },
     [user, room, shareLink],
@@ -192,7 +206,7 @@ function RoomPage() {
         setMessages(function (prev) {
           return [...prev, msg];
         });
-        if (activeTab !== "chat" && msg.username !== user?.username) {
+        if (activePanel !== "chat" && msg.username !== user?.username) {
           setUnreadCount(function (prev) {
             return prev + 1;
           });
@@ -203,17 +217,24 @@ function RoomPage() {
         socket.off("chat:received", handleIncoming);
       };
     },
-    [activeTab, user],
+    [activePanel, user],
+  );
+
+  useEffect(
+    function () {
+      if (activePanel === "chat" && chatBottomRef.current) {
+        chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    },
+    [messages, activePanel],
   );
 
   useEffect(
     function () {
       if (!room || !editorInstance) return;
-
-      const ydoc = new Y.Doc();
+      var ydoc = new Y.Doc();
       ydocRef.current = ydoc;
-
-      const provider = new WebsocketProvider(
+      var provider = new WebsocketProvider(
         "ws://localhost:1234",
         shareLink,
         ydoc,
@@ -227,9 +248,8 @@ function RoomPage() {
         });
       }
 
-      const ytext = ydoc.getText("monaco");
-
-      const binding = new MonacoBinding(
+      var ytext = ydoc.getText("monaco");
+      var binding = new MonacoBinding(
         ytext,
         editorInstance.getModel(),
         new Set([editorInstance]),
@@ -240,27 +260,23 @@ function RoomPage() {
       provider.on("sync", function (isSynced) {
         if (isSynced) setSyncStatus("synced");
         if (isSynced && ytext.length === 0) {
-          const starterCode = getStarterCode(room.language);
+          var starterCode = getStarterCode(room.language);
           ytext.insert(0, starterCode);
-          console.log("📝 Seeded starter code");
         }
       });
-
-      console.log("✅ Yjs collaboration active");
 
       return function () {
         binding.destroy();
         provider.destroy();
         ydoc.destroy();
         setSyncStatus("connecting");
-        console.log("🧹 Yjs cleaned up");
       };
     },
     [room, shareLink, editorInstance, user],
   );
 
   function getStarterCode(lang) {
-    const starters = {
+    var starters = {
       javascript:
         "// Write your JavaScript code here\nconsole.log('Hello, Intervue!');",
       python: "# Write your Python code here\nprint('Hello, Intervue!')",
@@ -274,7 +290,7 @@ function RoomPage() {
   }
 
   function getUserColor(username) {
-    const colors = [
+    var colors = [
       "#EF4444",
       "#F59E0B",
       "#10B981",
@@ -283,14 +299,14 @@ function RoomPage() {
       "#EC4899",
       "#14B8A6",
     ];
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
+    var hash = 0;
+    for (var i = 0; i < username.length; i++) {
       hash = username.charCodeAt(i) + ((hash << 5) - hash);
     }
     return colors[Math.abs(hash) % colors.length];
   }
 
-  const handleSaveProblem = async function () {
+  async function handleSaveProblem() {
     setProblemSaving(true);
     try {
       await api.patch("/rooms/" + shareLink + "/problem", {
@@ -303,78 +319,98 @@ function RoomPage() {
       setIsEditingProblem(false);
       toastSuccess("PROBLEM SAVED", "All participants updated.");
     } catch (err) {
-      console.log("Save problem error:", err.message);
       toastError("SAVE FAILED", "Could not update problem. Try again.");
     } finally {
       setProblemSaving(false);
     }
-  };
+  }
 
-  const handleRunCode = async function () {
+  async function handleRunCode() {
     setIsRunning(true);
     setOutput("");
     setOutputError("");
     setLastRunMeta(null);
-    setActiveTab("output");
+    setDrawerOpen(true);
+    setDrawerHeight(240);
 
-    const currentCode = editorInstance ? editorInstance.getValue() : "";
-    const startTime = Date.now();
+    var currentCode = editorInstance ? editorInstance.getValue() : "";
+    var startTime = Date.now();
 
     try {
-      const response = await api.post("/execute", {
+      var response = await api.post("/execute", {
         language: language,
         code: currentCode,
       });
-      const result = response.data.data;
+      var result = response.data.data;
       setOutput(result.output);
-      setLastRunMeta({
-        execTime: Date.now() - startTime + " ms",
-        memory: "—",
-      });
+      setLastRunMeta({ execTime: Date.now() - startTime + " ms", memory: "—" });
     } catch (err) {
-      console.log("Run code error:", err.message);
-      const errorMsg =
+      var errorMsg =
         err.response?.data?.message || "Failed to run code. Try again.";
       setOutputError(errorMsg);
       toastError("EXECUTION FAILED", errorMsg);
     } finally {
       setIsRunning(false);
     }
-  };
+  }
 
-  const handleCopyLink = function () {
-    const fullLink = window.location.href;
+  function handleCopyLink() {
+    var fullLink = window.location.href;
     navigator.clipboard.writeText(fullLink);
     setCopyStatus("Copied ✓");
     toastSuccess("LINK COPIED", "Ready to share with participants.");
     setTimeout(function () {
       setCopyStatus("Invite");
     }, 2000);
-  };
+  }
 
-  const handleTabChange = function (tab) {
-    setActiveTab(tab);
-    if (tab === "chat") setUnreadCount(0);
-  };
+  function togglePanel(panel) {
+    if (activePanel === panel) {
+      setActivePanel(null);
+    } else {
+      setActivePanel(panel);
+      if (panel === "chat") setUnreadCount(0);
+    }
+    setFocusMode(false);
+  }
 
-  const handleHint = async function () {
+  function toggleDrawer() {
+    if (drawerOpen) {
+      setDrawerOpen(false);
+      setDrawerHeight(32);
+    } else {
+      setDrawerOpen(true);
+      setDrawerHeight(240);
+    }
+  }
+
+  function toggleFocusMode() {
+    if (focusMode) {
+      setFocusMode(false);
+      setActivePanel("problem");
+    } else {
+      setFocusMode(true);
+      setActivePanel(null);
+      setDrawerOpen(false);
+      setDrawerHeight(32);
+    }
+  }
+
+  async function handleHint() {
     setIsHintOpen(true);
     setHintLoading(true);
     setHint("");
     setHintError("");
-
-    const currentCode = editorInstance ? editorInstance.getValue() : "";
-
+    var currentCode = editorInstance ? editorInstance.getValue() : "";
     try {
-      const response = await api.post("/hint", {
+      var response = await api.post("/hint", {
         problem_statement: problemStatement,
         code: currentCode,
         language: language,
       });
       setHint(response.data.data.hint);
     } catch (err) {
-      console.log("Hint error:", err.message);
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response?.data?.message) {
         setHintError(err.response.data.message);
       } else {
         setHintError("Failed to get hint. Try again.");
@@ -382,12 +418,53 @@ function RoomPage() {
     } finally {
       setHintLoading(false);
     }
-  };
+  }
+
+  function handleSendChat() {
+    var trimmed = chatInput.trim();
+    if (!trimmed) return;
+    socket.emit("chat:send", {
+      shareLink: shareLink,
+      username: user?.username,
+      message: trimmed,
+    });
+    setChatInput("");
+  }
+
+  function handleChatKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendChat();
+    }
+  }
+
+  function startDragDrawer(e) {
+    isDraggingRef.current = true;
+    e.preventDefault();
+
+    function onMove(ev) {
+      if (!isDraggingRef.current) return;
+      var newHeight = window.innerHeight - ev.clientY - 48;
+      if (newHeight < 60) newHeight = 32;
+      if (newHeight > 500) newHeight = 500;
+      setDrawerHeight(newHeight);
+      setDrawerOpen(newHeight > 60);
+    }
+
+    function onUp() {
+      isDraggingRef.current = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
-        <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">
+      <div className="h-screen bg-canvas flex items-center justify-center font-sans">
+        <p className="text-ink-tertiary text-[11px] font-medium uppercase tracking-widest">
           Loading room...
         </p>
       </div>
@@ -396,58 +473,57 @@ function RoomPage() {
 
   if (error) {
     return (
-      <div className="h-screen bg-zinc-950 flex flex-col items-center justify-center gap-6">
-        <p className="text-zinc-400 text-sm font-mono">{error}</p>
+      <div className="h-screen bg-canvas flex flex-col items-center justify-center gap-6 font-sans">
+        <p className="text-ink-muted text-[14px]">{error}</p>
         <button
           onClick={function () {
             navigate("/dashboard");
           }}
-          className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition-colors duration-150"
+          className="flex-shrink-0 hover:opacity-80 transition-opacity duration-150"
         >
-          Back to dashboard
+          <span className="text-ink text-[15px] font-semibold tracking-tight">
+            Intervue<span className="text-primary">.</span>
+          </span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
-      <header className="h-14 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 bg-zinc-950">
-        <div className="flex items-center gap-5">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden font-sans">
+      {/* ═══════════════════════════ TOP BAR ═══════════════════════════ */}
+      <header className="h-12 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0 bg-canvas z-30">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={function () {
               navigate("/dashboard");
             }}
-            className="flex items-center gap-2.5 group"
+            className="flex-shrink-0 hover:opacity-80 transition-opacity duration-150"
           >
-            <div className="w-2 h-2 rounded-full bg-emerald-500/60 group-hover:bg-emerald-500 transition-colors duration-150" />
-            <span className="text-zinc-100 text-base font-medium tracking-tight group-hover:text-white transition-colors duration-150">
-              Intervue
+            <span className="text-ink text-[15px] font-semibold tracking-tight">
+              Intervue<span className="text-primary">.</span>
             </span>
           </button>
 
-          <div className="h-6 w-px bg-white/10" />
+          <div className="w-px h-5 bg-hairline flex-shrink-0" />
 
-          <div className="flex flex-col leading-none">
-            <span className="text-zinc-100 text-sm font-light">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[13px] text-ink font-medium truncate">
               {room.name}
             </span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                {LANGUAGE_LABELS[room.language] || room.language}
-              </span>
-              <span className="text-zinc-700">·</span>
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                {role}
-              </span>
-            </div>
+            <span className="bg-surface-2 text-ink-muted text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border border-hairline flex-shrink-0">
+              {LANGUAGE_LABELS[room.language] || room.language}
+            </span>
+            <span className="bg-surface-2 text-ink-muted text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border border-hairline flex-shrink-0">
+              {role}
+            </span>
           </div>
 
-          <div className="h-6 w-px bg-white/10" />
+          <div className="w-px h-5 bg-hairline flex-shrink-0" />
 
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1.5">
-              {activeUsers.slice(0, 4).map(function (u, i) {
+              {activeUsers.slice(0, 3).map(function (u, i) {
                 return (
                   <div
                     key={i}
@@ -455,132 +531,153 @@ function RoomPage() {
                       u.username +
                       (u.username === user?.username ? " (you)" : "")
                     }
-                    className="w-6 h-6 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[9px] font-mono border border-zinc-950 uppercase cursor-default"
+                    className="w-6 h-6 rounded-full bg-surface-3 border border-canvas flex items-center justify-center text-[9px] font-medium text-ink-muted uppercase"
                   >
                     {u.username.substring(0, 2)}
                   </div>
                 );
               })}
-              {activeUsers.length > 4 && (
-                <div className="w-6 h-6 rounded-full bg-zinc-800 text-zinc-500 flex items-center justify-center text-[9px] font-mono border border-zinc-950">
-                  +{activeUsers.length - 4}
+              {activeUsers.length > 3 && (
+                <div className="w-6 h-6 rounded-full bg-surface-3 border border-canvas flex items-center justify-center text-[9px] font-medium text-ink-tertiary">
+                  +{activeUsers.length - 3}
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-              {activeUsers.length} online
-            </span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-semantic-success animate-pulse" />
+              <span className="text-[11px] text-ink-tertiary font-medium">
+                {activeUsers.length} online
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleHint}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
-          >
-            Hint ✦
-          </button>
-
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={handleCopyLink}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
+            className="text-[12px] font-medium text-ink-subtle hover:text-ink px-3 py-1.5 rounded-full hover:bg-surface-1 transition-colors duration-150"
           >
             {copyStatus}
           </button>
 
-          <div className="h-6 w-px bg-white/10 mx-1" />
+          <button
+            onClick={toggleFocusMode}
+            className={
+              "text-[12px] font-medium px-3 py-1.5 rounded-full transition-colors duration-150 " +
+              (focusMode
+                ? "bg-primary/20 text-primary"
+                : "text-ink-subtle hover:text-ink hover:bg-surface-1")
+            }
+          >
+            {focusMode ? "Exit focus" : "Focus mode"}
+          </button>
 
-          {localStream && (
-            <button
-              onClick={toggleMic}
-              title={isMicOn ? "Mute mic" : "Unmute mic"}
-              className={`text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150 ${
-                isMicOn
-                  ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
-                  : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
-              }`}
-            >
-              {isMicOn ? "Mic" : "Mic Off"}
-            </button>
-          )}
-
-          {localStream && (
-            <button
-              onClick={toggleCamera}
-              title={isCameraOn ? "Turn off camera" : "Turn on camera"}
-              className={`text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150 ${
-                isCameraOn
-                  ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
-                  : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
-              }`}
-            >
-              {isCameraOn ? "Cam" : "Cam Off"}
-            </button>
-          )}
-
-          {localStream && (
-            <button
-              onClick={leaveCall}
-              title="Leave call"
-              className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
-            >
-              Leave
-            </button>
-          )}
-
-          <div className="h-6 w-px bg-white/10 mx-1" />
+          <div className="w-px h-5 bg-hairline mx-1" />
 
           <button
             onClick={handleRunCode}
             disabled={isRunning}
-            className="flex items-center gap-2 text-xs font-medium tracking-widest text-zinc-950 uppercase bg-zinc-100 hover:bg-white px-4 py-1.5 rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[12px] font-medium px-4 py-1.5 rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isRunning ? "Running..." : "Run"}
-            {!isRunning && <span className="text-[10px]">▶</span>}
+            {!isRunning && <Play size={12} strokeWidth={2.5} />}
           </button>
         </div>
       </header>
 
+      {/* ═══════════════════════════ MAIN BODY ═══════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden bg-zinc-900/30 relative">
-          <div className="h-10 flex items-center justify-between px-5 border-b border-white/5 flex-shrink-0 bg-zinc-950">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+        {/* ────────── ICON RAIL (48px) ────────── */}
+        <aside className="w-12 flex-shrink-0 border-r border-hairline bg-canvas flex flex-col items-center py-3 z-20">
+          <div className="flex flex-col gap-1 flex-1">
+            <RailButton
+              icon={<FileText size={16} />}
+              label="Problem"
+              active={activePanel === "problem"}
+              onClick={function () {
+                togglePanel("problem");
+              }}
+            />
+            <RailButton
+              icon={<MessageSquare size={16} />}
+              label="Chat"
+              active={activePanel === "chat"}
+              badge={unreadCount > 0 ? unreadCount : null}
+              onClick={function () {
+                togglePanel("chat");
+              }}
+            />
+            <RailButton
+              icon={<Users size={16} />}
+              label="People"
+              active={activePanel === "people"}
+              onClick={function () {
+                togglePanel("people");
+              }}
+            />
+            <RailButton
+              icon={<Sparkles size={16} />}
+              label="AI Hint"
+              onClick={handleHint}
+            />
+          </div>
+
+          {localStream && (
+            <div className="flex flex-col gap-1 pt-2 border-t border-hairline w-full items-center">
+              <RailButton
+                icon={isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                label={isMicOn ? "Mute" : "Unmute"}
+                onClick={toggleMic}
+                active={!isMicOn}
+              />
+              <RailButton
+                icon={isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                label={isCameraOn ? "Turn off cam" : "Turn on cam"}
+                onClick={toggleCamera}
+                active={!isCameraOn}
+              />
+              <RailButton
+                icon={<PhoneOff size={16} />}
+                label="Leave call"
+                onClick={leaveCall}
+                danger
+              />
+            </div>
+          )}
+        </aside>
+
+        {/* ────────── EDITOR + CONSOLE COLUMN ────────── */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="h-9 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0 bg-surface-1">
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-medium text-ink-tertiary uppercase tracking-widest">
                 Editor
               </span>
-              <div className="h-4 w-px bg-white/10" />
-              <select
-                value={language}
-                onChange={function (e) {
-                  setLanguage(e.target.value);
-                }}
-                className="text-xs text-zinc-300 bg-transparent cursor-pointer hover:text-zinc-100 transition-colors duration-150 appearance-none font-light"
-              >
-                {LANGUAGES.map(function (lang) {
-                  return (
-                    <option key={lang} value={lang} className="bg-zinc-900">
-                      {LANGUAGE_LABELS[lang]}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="w-px h-3 bg-hairline" />
             </div>
-
-            <div className="flex items-center gap-2">
+            <Dropdown
+              value={language}
+              options={LANGUAGE_OPTIONS}
+              onChange={function (newLang) {
+                setLanguage(newLang);
+              }}
+            />
+            <div className="flex items-center gap-1.5">
               <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  syncStatus === "synced"
-                    ? "bg-emerald-500/60"
-                    : "bg-zinc-600 animate-pulse"
-                }`}
+                className={
+                  "w-1.5 h-1.5 rounded-full " +
+                  (syncStatus === "synced"
+                    ? "bg-semantic-success"
+                    : "bg-ink-tertiary animate-pulse")
+                }
               />
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+              <span className="text-[10px] font-medium text-ink-tertiary uppercase tracking-widest">
                 {syncStatus === "synced" ? "Synced" : "Connecting..."}
               </span>
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden relative">
             <Editor
               height="100%"
               language={language}
@@ -592,7 +689,7 @@ function RoomPage() {
                   "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                padding: { top: 20 },
+                padding: { top: 16 },
                 lineNumbers: "on",
                 renderLineHighlight: "line",
                 overviewRulerBorder: false,
@@ -600,222 +697,312 @@ function RoomPage() {
                 automaticLayout: true,
               }}
             />
+
+            <VideoOverlay
+              localStream={localStream}
+              remoteStream={remoteStream}
+              isMicOn={isMicOn}
+              isCameraOn={isCameraOn}
+              callStatus={callStatus}
+              username={user?.username}
+              remoteUsername={remoteUsername}
+            />
           </div>
 
-          <VideoOverlay
-            localStream={localStream}
-            remoteStream={remoteStream}
-            isMicOn={isMicOn}
-            isCameraOn={isCameraOn}
-            callStatus={callStatus}
-            username={user?.username}
-            remoteUsername={remoteUsername}
-          />
-        </div>
+          {/* ────────── BOTTOM CONSOLE DRAWER ────────── */}
+          <div
+            ref={drawerRef}
+            className="flex flex-col flex-shrink-0 border-t border-hairline bg-surface-1 relative"
+            style={{
+              height: drawerHeight + "px",
+              transition: isDraggingRef.current
+                ? "none"
+                : "height 0.2s ease-out",
+            }}
+          >
+            <div
+              onMouseDown={startDragDrawer}
+              className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize hover:bg-primary/30 transition-colors duration-150 z-10"
+            />
 
-        <div className="w-[420px] flex flex-col bg-zinc-950 flex-shrink-0">
-          <div className="h-10 flex items-center border-b border-white/5 flex-shrink-0 px-2">
-            <TabButton
-              active={activeTab === "problem"}
-              onClick={function () {
-                handleTabChange("problem");
-              }}
-            >
-              Problem
-            </TabButton>
-            <TabButton
-              active={activeTab === "output"}
-              onClick={function () {
-                handleTabChange("output");
-              }}
-            >
-              Output
-            </TabButton>
-            <TabButton
-              active={activeTab === "chat"}
-              onClick={function () {
-                handleTabChange("chat");
-              }}
-              badge={unreadCount > 0 ? unreadCount : null}
-            >
-              Chat
-            </TabButton>
-          </div>
+            <div className="h-8 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0">
+              <button
+                onClick={toggleDrawer}
+                className="flex items-center gap-2 text-[11px] font-medium text-ink-subtle hover:text-ink transition-colors duration-150"
+              >
+                {drawerOpen ? (
+                  <ChevronDown size={12} strokeWidth={2.5} />
+                ) : (
+                  <ChevronUp size={12} strokeWidth={2.5} />
+                )}
+                <span className="uppercase tracking-widest">Console</span>
+                {output && !drawerOpen && (
+                  <span className="w-1 h-1 rounded-full bg-semantic-success" />
+                )}
+              </button>
 
-          {activeTab === "problem" && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                    Problem
-                  </span>
-                  {!isEditingProblem && problemStatement && (
-                    <h2 className="text-zinc-100 text-lg font-light tracking-tight leading-tight">
-                      {getProblemTitle(problemStatement)}
-                    </h2>
+              {drawerOpen && (
+                <div className="flex items-center gap-2">
+                  {lastRunMeta && (
+                    <span className="text-[10px] font-mono text-ink-tertiary">
+                      {lastRunMeta.execTime}
+                    </span>
                   )}
-                </div>
-
-                {role === "host" && !isEditingProblem && (
                   <button
                     onClick={function () {
-                      setIsEditingProblem(true);
+                      setOutput("");
+                      setOutputError("");
+                      setLastRunMeta(null);
                     }}
-                    className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
+                    className="text-[10px] font-medium text-ink-tertiary hover:text-ink uppercase tracking-widest transition-colors duration-150"
                   >
-                    {problemStatement ? "Edit →" : "+ Add"}
+                    Clear
                   </button>
-                )}
-
-                {role === "host" && isEditingProblem && (
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={function () {
-                        setProblemStatement(room.problem_statement || "");
-                        setIsEditingProblem(false);
-                      }}
-                      className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveProblem}
-                      disabled={problemSaving}
-                      className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-3 py-1 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40"
-                    >
-                      {problemSaving ? "Saving..." : "Save"}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="h-px bg-white/5 flex-shrink-0" />
-
-              <div className="flex-1 overflow-y-auto px-5 py-4">
-                {isEditingProblem ? (
-                  <textarea
-                    value={problemStatement}
-                    onChange={function (e) {
-                      setProblemStatement(e.target.value);
-                    }}
-                    placeholder="Type the problem statement here..."
-                    autoFocus
-                    className="w-full h-full min-h-[300px] text-sm text-zinc-100 bg-zinc-900 border border-white/10 p-4 resize-none focus:border-white/20 transition-colors duration-150 font-mono rounded-lg leading-relaxed"
-                  />
-                ) : problemStatement ? (
-                  <pre className="text-sm text-zinc-400 whitespace-pre-wrap break-words font-sans leading-relaxed">
-                    {getProblemBody(problemStatement)}
-                  </pre>
-                ) : (
-                  <div className="flex flex-col gap-2 py-8">
-                    <p className="text-zinc-400 text-sm font-light">
-                      No problem has been set.
-                    </p>
-                    <p className="text-zinc-600 text-xs font-mono">
-                      {role === "host"
-                        ? "Click + Add to write one."
-                        : "The host will share the problem soon."}
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
 
-          {activeTab === "output" && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="px-5 py-4 flex-shrink-0">
-                <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                  Output
-                </span>
-              </div>
-              <div className="h-px bg-white/5 flex-shrink-0" />
-              <div className="flex-1 overflow-y-auto px-5 py-4">
+            {drawerOpen && (
+              <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[12px]">
                 {isRunning && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                      stdout
-                    </span>
-                    <p className="text-sm text-zinc-400 font-mono">
-                      Running {LANGUAGE_LABELS[language]}...
-                    </p>
-                  </div>
+                  <p className="text-ink-subtle">
+                    <span className="text-ink-tertiary">$</span> Running{" "}
+                    {LANGUAGE_LABELS[language]}...
+                  </p>
                 )}
 
                 {!isRunning && outputError && (
-                  <div className="flex flex-col gap-3">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                      Error
-                    </span>
-                    <p className="text-sm text-zinc-300 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono whitespace-pre-wrap">
-                      {outputError}
+                  <div>
+                    <p className="text-red-400/80 mb-1">
+                      <span className="text-ink-tertiary">$</span> Error
                     </p>
+                    <pre className="text-ink-muted whitespace-pre-wrap">
+                      {outputError}
+                    </pre>
                   </div>
                 )}
 
                 {!isRunning && !outputError && output && (
-                  <div className="flex flex-col gap-5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-                      <span className="text-[10px] font-mono text-emerald-500/80 uppercase tracking-widest">
-                        Accepted
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1 h-1 rounded-full bg-semantic-success" />
+                      <span className="text-[10px] text-semantic-success uppercase tracking-widest">
+                        Success
                       </span>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                        stdout
-                      </span>
-                      <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap break-words leading-relaxed bg-zinc-900 border border-white/10 rounded-lg p-4">
-                        {output}
-                      </pre>
-                    </div>
-                    {lastRunMeta && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1 border border-white/10 rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                            Execution
-                          </span>
-                          <span className="text-sm text-zinc-100 font-light">
-                            {lastRunMeta.execTime}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-1 border border-white/10 rounded-lg p-3">
-                          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                            Memory
-                          </span>
-                          <span className="text-sm text-zinc-100 font-light">
-                            {lastRunMeta.memory}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <pre className="text-ink whitespace-pre-wrap break-words leading-relaxed">
+                      {output}
+                    </pre>
                   </div>
                 )}
 
                 {!isRunning && !outputError && !output && (
-                  <div className="flex flex-col gap-2 py-4">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                      stdout
-                    </span>
-                    <p className="text-zinc-600 text-sm font-mono">
-                      Run your code to see output.
-                    </p>
-                  </div>
+                  <p className="text-ink-tertiary">
+                    <span className="text-ink-tertiary">$</span> Run your code
+                    to see output.
+                  </p>
                 )}
               </div>
-            </div>
-          )}
-
-          {activeTab === "chat" && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <ChatPanelInline
-                shareLink={shareLink}
-                username={user?.username}
-                messages={messages}
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* ────────── RIGHT CONTEXTUAL PANEL ────────── */}
+        {activePanel && (
+          <aside
+            className="w-[340px] flex-shrink-0 border-l border-hairline bg-surface-1 flex flex-col overflow-hidden"
+            style={{ animation: "slideIn 0.2s ease-out" }}
+          >
+            <div className="h-9 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0">
+              <span className="text-[11px] font-medium text-ink uppercase tracking-widest">
+                {activePanel === "problem" && "Problem"}
+                {activePanel === "chat" && "Chat"}
+                {activePanel === "people" && "People"}
+              </span>
+              <button
+                onClick={function () {
+                  setActivePanel(null);
+                }}
+                className="text-ink-tertiary hover:text-ink w-6 h-6 flex items-center justify-center rounded-md hover:bg-surface-2 transition-colors duration-150"
+              >
+                <X size={14} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* ──── PROBLEM PANEL ──── */}
+            {activePanel === "problem" && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-4 py-3 flex items-center justify-between flex-shrink-0">
+                  {!isEditingProblem && problemStatement && (
+                    <h2 className="text-ink text-[14px] font-medium truncate flex-1 mr-2">
+                      {getProblemTitle(problemStatement)}
+                    </h2>
+                  )}
+                  {role === "host" && !isEditingProblem && (
+                    <button
+                      onClick={function () {
+                        setIsEditingProblem(true);
+                      }}
+                      className="text-[11px] font-medium text-ink-subtle hover:text-ink px-2 py-1 rounded-full hover:bg-surface-2 transition-colors duration-150 flex-shrink-0"
+                    >
+                      {problemStatement ? "Edit" : "+ Add"}
+                    </button>
+                  )}
+                  {role === "host" && isEditingProblem && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={function () {
+                          setProblemStatement(room.problem_statement || "");
+                          setIsEditingProblem(false);
+                        }}
+                        className="text-[11px] font-medium text-ink-subtle hover:text-ink px-2 py-1 rounded-full transition-colors duration-150"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveProblem}
+                        disabled={problemSaving}
+                        className="text-[11px] font-medium text-white bg-primary hover:bg-primary-hover px-3 py-1 rounded-full transition-colors duration-150 disabled:opacity-40"
+                      >
+                        {problemSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px bg-hairline flex-shrink-0" />
+
+                <div className="flex-1 overflow-y-auto px-4 py-3">
+                  {isEditingProblem ? (
+                    <textarea
+                      value={problemStatement}
+                      onChange={function (e) {
+                        setProblemStatement(e.target.value);
+                      }}
+                      placeholder="Type the problem statement here..."
+                      autoFocus
+                      className="w-full h-full min-h-[300px] text-[13px] text-ink bg-surface-2 border border-hairline p-3 resize-none focus:outline-none focus:border-hairline-strong transition-colors duration-150 rounded-lg leading-relaxed placeholder:text-ink-tertiary"
+                    />
+                  ) : problemStatement ? (
+                    <pre className="text-[13px] text-ink-muted whitespace-pre-wrap break-words font-sans leading-relaxed">
+                      {getProblemBody(problemStatement)}
+                    </pre>
+                  ) : (
+                    <div className="flex flex-col gap-1.5 py-8">
+                      <p className="text-ink text-[13px] font-medium">
+                        No problem set.
+                      </p>
+                      <p className="text-ink-tertiary text-[12px]">
+                        {role === "host"
+                          ? "Click + Add to write the problem statement."
+                          : "The host will share the problem soon."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ──── CHAT PANEL ──── */}
+            {activePanel === "chat" && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                  {messages.length === 0 && (
+                    <p className="text-ink-tertiary text-[12px] text-center py-8">
+                      No messages yet. Say hello.
+                    </p>
+                  )}
+                  {messages.map(function (msg) {
+                    var isMe = msg.username === user?.username;
+                    return (
+                      <div key={msg.id} className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-surface-3 border border-hairline flex items-center justify-center text-[8px] font-medium uppercase text-ink-muted flex-shrink-0">
+                            {msg.username.substring(0, 2)}
+                          </div>
+                          <span className="text-[12px] text-ink font-medium">
+                            {isMe ? "you" : msg.username}
+                          </span>
+                          <span className="text-[10px] text-ink-tertiary ml-auto">
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="ml-7 text-[13px] text-ink-muted leading-relaxed whitespace-pre-wrap break-words">
+                          {msg.message}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  <div ref={chatBottomRef} />
+                </div>
+
+                <div className="p-3 border-t border-hairline flex-shrink-0">
+                  <textarea
+                    rows={2}
+                    value={chatInput}
+                    onChange={function (e) {
+                      setChatInput(e.target.value);
+                    }}
+                    onKeyDown={handleChatKeyDown}
+                    placeholder="Type a message..."
+                    className="w-full text-[13px] text-ink bg-surface-2 border border-hairline rounded-lg p-2.5 resize-none focus:outline-none focus:border-hairline-strong transition-colors duration-150 placeholder:text-ink-tertiary font-sans mb-2"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSendChat}
+                      disabled={!chatInput.trim()}
+                      className="bg-primary hover:bg-primary-hover text-white text-[12px] font-medium px-4 py-1.5 rounded-full transition-colors duration-150 disabled:opacity-40"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ──── PEOPLE PANEL ──── */}
+            {activePanel === "people" && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
+                  {activeUsers.map(function (u, i) {
+                    var isYou = u.username === user?.username;
+                    return (
+                      <div
+                        key={i}
+                        className={
+                          "flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2 transition-colors duration-150 " +
+                          (i !== activeUsers.length - 1
+                            ? "border-b border-hairline"
+                            : "")
+                        }
+                      >
+                        <div className="w-7 h-7 rounded-full bg-surface-3 border border-hairline flex items-center justify-center text-[10px] font-medium uppercase text-ink-muted flex-shrink-0">
+                          {u.username.substring(0, 2)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] text-ink font-medium truncate">
+                              {u.username}
+                            </span>
+                            {isYou && (
+                              <span className="text-[10px] text-ink-tertiary font-medium">
+                                (you)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-semantic-success flex-shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
 
       <HintModal
@@ -828,144 +1015,52 @@ function RoomPage() {
         }}
         onRegenerate={handleHint}
       />
+
+      <style>
+        {
+          "\n        @keyframes slideIn {\n          from { transform: translateX(20px); opacity: 0; }\n          to { transform: translateX(0); opacity: 1; }\n        }\n      "
+        }
+      </style>
     </div>
   );
 }
 
-function TabButton({ active, onClick, children, badge }) {
+function RailButton({ icon, label, active, onClick, badge, danger }) {
   return (
     <button
       onClick={onClick}
-      className={`relative px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
-        active ? "text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
-      }`}
+      title={label}
+      className={
+        "relative w-9 h-9 flex items-center justify-center rounded-lg transition-colors duration-150 " +
+        (danger
+          ? "text-red-400/80 hover:bg-red-500/10 hover:text-red-400"
+          : active
+            ? "bg-surface-2 text-ink"
+            : "text-ink-subtle hover:bg-surface-1 hover:text-ink")
+      }
     >
-      {children}
+      {icon}
+      {active && !danger && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
+      )}
       {badge !== null && badge !== undefined && (
-        <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-zinc-100 text-zinc-950 text-[9px] font-bold">
+        <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">
           {badge}
         </span>
-      )}
-      {active && (
-        <div className="absolute bottom-0 left-2 right-2 h-px bg-zinc-100" />
       )}
     </button>
   );
 }
 
 function getProblemTitle(text) {
-  const lines = text.trim().split("\n");
+  var lines = text.trim().split("\n");
   return lines[0] || "Untitled";
 }
 
 function getProblemBody(text) {
-  const lines = text.trim().split("\n");
+  var lines = text.trim().split("\n");
   if (lines.length <= 1) return "";
   return lines.slice(1).join("\n").trim();
-}
-
-function ChatPanelInline({ shareLink, username, messages }) {
-  const [inputText, setInputText] = useState("");
-  const bottomRef = useRef(null);
-
-  useEffect(
-    function () {
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-    },
-    [messages],
-  );
-
-  function handleSend() {
-    const trimmed = inputText.trim();
-    if (!trimmed) return;
-    socket.emit("chat:send", {
-      shareLink: shareLink,
-      username: username,
-      message: trimmed,
-    });
-    setInputText("");
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
-
-  function formatTime(isoString) {
-    return new Date(isoString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function getInitial(name) {
-    return name ? name.substring(0, 2).toUpperCase() : "?";
-  }
-
-  return (
-    <>
-      <div className="px-5 py-4 flex-shrink-0">
-        <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-          Chat
-        </span>
-      </div>
-      <div className="h-px bg-white/5 flex-shrink-0" />
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {messages.length === 0 && (
-          <p className="text-zinc-600 text-xs font-mono">
-            No messages yet. Say hello.
-          </p>
-        )}
-        {messages.map(function (msg) {
-          const isMe = msg.username === username;
-          return (
-            <div key={msg.id} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[8px] font-mono uppercase flex-shrink-0">
-                  {getInitial(msg.username)}
-                </div>
-                <span className="text-xs text-zinc-100 font-medium">
-                  {isMe ? "you" : msg.username}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-600 ml-auto">
-                  {formatTime(msg.timestamp)}
-                </span>
-              </div>
-              <p className="ml-7 text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap break-words">
-                {msg.message}
-              </p>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
-      <div className="p-4 border-t border-white/5 flex-shrink-0">
-        <textarea
-          rows={2}
-          value={inputText}
-          onChange={function (e) {
-            setInputText(e.target.value);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="w-full text-sm text-zinc-100 placeholder-zinc-600 bg-zinc-900 border border-white/10 rounded-lg p-3 resize-none focus:border-white/20 transition-colors duration-150 font-mono mb-2"
-        />
-        <div className="flex justify-end">
-          <button
-            onClick={handleSend}
-            disabled={!inputText.trim()}
-            className="text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-30"
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </>
-  );
 }
 
 export default RoomPage;

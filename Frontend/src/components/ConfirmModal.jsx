@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function ConfirmModal({
   isOpen,
@@ -9,70 +9,78 @@ function ConfirmModal({
   onClose,
   isLoading,
 }) {
+  var [fadeClass, setFadeClass] = useState("opacity-0 scale-95");
+
   useEffect(
     function () {
-      if (!isOpen) return;
-      function handleEsc(e) {
-        if (e.key === "Escape") onClose();
+      if (isOpen) {
+        var timer = setTimeout(function () {
+          setFadeClass("opacity-100 scale-100");
+        }, 50);
+        return function () {
+          clearTimeout(timer);
+        };
+      } else {
+        setFadeClass("opacity-0 scale-95");
       }
-      window.addEventListener("keydown", handleEsc);
-      return function () {
-        window.removeEventListener("keydown", handleEsc);
-      };
     },
-    [isOpen, onClose],
+    [isOpen],
   );
 
   if (!isOpen) return null;
 
+  function handleBackdropClick(e) {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }
+
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 font-sans"
+      onClick={handleBackdropClick}
     >
-      <div
-        onClick={function (e) {
-          e.stopPropagation();
-        }}
-        className="w-full max-w-[440px] bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden"
-      >
-        <div className="h-12 flex items-center justify-between px-6 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500/70" />
-            <span className="text-xs font-mono text-zinc-100 uppercase tracking-widest font-medium">
-              {title}
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
-          >
-            close
-          </button>
-        </div>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-none" />
 
-        <div className="px-6 py-6">
-          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+      {/* Modal */}
+      <div
+        className={
+          "relative w-full max-w-[380px] bg-surface-1 border border-hairline rounded-xl transition-all duration-300 ease-out " +
+          fadeClass
+        }
+      >
+        <div className="p-6">
+          {/* Header with red dot */}
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+            <h2 className="text-[11px] font-medium text-ink-subtle uppercase tracking-widest font-sans">
+              {title}
+            </h2>
+          </div>
+
+          {/* Message */}
+          <p className="text-[14px] text-ink font-sans leading-relaxed whitespace-pre-wrap mb-6">
             {message}
           </p>
-        </div>
 
-        <div className="h-12 flex items-center justify-end gap-3 px-6 border-t border-white/5">
-          <button
-            onClick={onClose}
-            disabled={isLoading}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150 disabled:opacity-30"
-          >
-            cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-red-400 border border-red-500/30 hover:bg-red-500/10 px-4 py-1.5 rounded-full transition-colors duration-150 disabled:opacity-30"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500/70" />
-            {isLoading ? "deleting..." : confirmLabel}
-          </button>
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[14px] font-medium font-sans py-3 rounded-full border border-red-500/20 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Deleting..." : confirmLabel || "Confirm"}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium font-sans py-2 transition-colors duration-150"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

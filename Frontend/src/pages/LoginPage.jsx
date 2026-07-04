@@ -1,38 +1,100 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import { toastSuccess, toastError } from "../lib/toast";
 
 function LoginPage() {
-  const navigate = useNavigate();
-  const setUser = useAuthStore((state) => state.setUser);
+  var navigate = useNavigate();
+  var setUser = useAuthStore(function (state) {
+    return state.setUser;
+  });
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  var [view, setView] = useState("options");
+  var [email, setEmail] = useState("");
+  var [password, setPassword] = useState("");
+  var [showPassword, setShowPassword] = useState(false);
+  var [error, setError] = useState("");
+  var [isLoading, setIsLoading] = useState(false);
+  var [fadeClass, setFadeClass] = useState("opacity-0 translate-y-2");
 
-  const handleSubmit = async (e) => {
+  var passwordRef = useRef(null);
+  var emailRef = useRef(null);
+
+  useEffect(function () {
+    var timer = setTimeout(function () {
+      setFadeClass("opacity-100 translate-y-0");
+    }, 50);
+    return function () {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function transitionTo(nextView) {
+    setFadeClass("opacity-0 translate-y-2");
+    setError("");
+
+    setTimeout(function () {
+      setView(nextView);
+      setFadeClass("opacity-100 translate-y-0");
+
+      setTimeout(function () {
+        if (nextView === "email" && emailRef.current) {
+          emailRef.current.focus();
+        }
+        if (nextView === "password" && passwordRef.current) {
+          passwordRef.current.focus();
+        }
+      }, 300);
+    }, 200);
+  }
+
+  function handleContinueEmail(e) {
     e.preventDefault();
     setError("");
+
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    transitionTo("password");
+  }
+
+  async function handleSignIn(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/login", {
+      var response = await api.post("/auth/login", {
         email: email,
         password: password,
       });
 
-      const user = response.data.data.user;
-      const token = response.data.data.token;
+      var user = response.data.data.user;
+      var token = response.data.data.token;
 
       setUser(user, token);
       toastSuccess("SIGNED IN", "Welcome back, " + user.username + ".");
       navigate("/dashboard");
     } catch (err) {
-      const errorMsg =
+      var errorMsg =
         err.response?.data?.message ||
         "Something went wrong. Please try again.";
       setError(errorMsg);
@@ -40,242 +102,186 @@ function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="h-screen bg-zinc-950 flex overflow-hidden">
-      <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-          <span className="text-2xl font-medium tracking-tight text-zinc-100">
-            Intervue
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 relative">
+      {/* Main container */}
+      <div
+        className={
+          "w-full max-w-[340px] flex flex-col items-center transition-all duration-500 ease-out " +
+          fadeClass
+        }
+      >
+        {/* Logo */}
+        <div className="mb-8 select-none">
+          <span className="text-ink text-[32px] font-semibold tracking-tight">
+            Intervue<span className="text-primary">.</span>
           </span>
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest ml-2">
-            v1.0.0
-          </span>
         </div>
 
-        <div className="my-8 flex flex-col gap-6">
-          <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
-            <div className="h-9 border-b border-white/5 flex items-center justify-between px-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-                  Editor
-                </span>
-                <div className="h-px w-4 bg-white/10" />
-                <span className="text-xs font-mono text-zinc-500">cpp</span>
-              </div>
+        {/* Heading */}
+        <h1 className="text-[18px] font-medium text-ink mb-8 tracking-tight">
+          {view === "options" && "Log in to Intervue"}
+          {view === "email" && "Continue with email"}
+          {view === "password" && "Enter your password"}
+        </h1>
 
-              <div className="flex -space-x-1.5">
-                <div className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[8px] font-mono border border-zinc-950">
-                  AK
-                </div>
-                <div className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[8px] font-mono border border-zinc-950">
-                  JS
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 font-mono text-[13px] leading-relaxed">
-              <div className="text-zinc-600">
-                1 <span className="text-zinc-500">// balanced binary tree</span>
-              </div>
-              <div className="text-zinc-600">
-                2 <span className="text-zinc-400">class</span>{" "}
-                <span className="text-zinc-100">Solution</span>{" "}
-                <span className="text-zinc-500">{`{`}</span>
-              </div>
-              <div className="text-zinc-600">
-                3 <span className="text-zinc-400">public</span>
-                <span className="text-zinc-500">:</span>
-              </div>
-              <div className="text-zinc-600">
-                4 <span className="text-zinc-400">bool</span>{" "}
-                <span className="text-zinc-100">isBalanced</span>
-                <span className="text-zinc-500">(</span>
-                <span className="text-zinc-400">TreeNode</span>
-                <span className="text-zinc-500">*</span> root
-                <span className="text-zinc-500">)</span>{" "}
-                <span className="text-zinc-500">{`{`}</span>
-              </div>
-              <div className="text-zinc-600">
-                5 <span className="text-zinc-400">if</span>{" "}
-                <span className="text-zinc-500">(!</span>root
-                <span className="text-zinc-500">)</span>{" "}
-                <span className="text-zinc-400">return</span>{" "}
-                <span className="text-zinc-100">true</span>
-                <span className="text-zinc-500">;</span>
-              </div>
-              <div className="text-zinc-600">
-                6 <span className="text-zinc-400">int</span>{" "}
-                <span className="text-zinc-100">lh</span>{" "}
-                <span className="text-zinc-500">=</span>{" "}
-                <span className="text-zinc-100">height</span>
-                <span className="text-zinc-500">(</span>root
-                <span className="text-zinc-500">-&gt;</span>left
-                <span className="text-zinc-500">);</span>
-              </div>
-              <div className="text-zinc-600">
-                7 <span className="text-zinc-400">int</span>{" "}
-                <span className="text-zinc-100">rh</span>{" "}
-                <span className="text-zinc-500">=</span>{" "}
-                <span className="text-zinc-100">height</span>
-                <span className="text-zinc-500">(</span>root
-                <span className="text-zinc-500">-&gt;</span>right
-                <span className="text-zinc-500">);</span>
-              </div>
-              <div className="text-zinc-600">
-                8 <span className="text-zinc-400">return</span> abs
-                <span className="text-zinc-500">(</span>lh{" "}
-                <span className="text-zinc-500">-</span> rh
-                <span className="text-zinc-500">)</span>{" "}
-                <span className="text-zinc-500">&lt;=</span>{" "}
-                <span className="text-zinc-100">1</span>
-                <span className="text-zinc-500">;</span>
-              </div>
-              <div className="text-zinc-600">
-                9 <span className="text-zinc-500">{`}`}</span>
-              </div>
-              <div className="text-zinc-600">
-                10 <span className="text-zinc-500">{`};`}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            <FeatureRow>Real-time collaborative editor</FeatureRow>
-            <FeatureRow>Live cursors with user awareness</FeatureRow>
-            <FeatureRow>Sandboxed code execution · 6 languages</FeatureRow>
-            <FeatureRow>Shared problem statement + chat</FeatureRow>
-          </div>
-        </div>
-
-        <div>
-          <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
-            Collaborative
-            <br />
-            <span className="text-zinc-500">interviews.</span>
-          </h1>
-          <p className="text-sm font-light leading-relaxed text-zinc-400 max-w-md">
-            Create. Invite. Interview.
-          </p>
-        </div>
-      </div>
-
-      <div className="w-full lg:w-2/5 flex flex-col h-screen">
-        <div className="flex-1 flex items-center justify-center px-8 py-8 overflow-y-auto">
-          <div className="w-full max-w-sm">
-            <div className="flex lg:hidden items-center gap-3 mb-8">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-              <span className="text-2xl font-medium tracking-tight text-zinc-100">
-                Intervue
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                Sign in
-              </span>
-              <div className="h-px bg-white/10 flex-1" />
-            </div>
-
-            <h2 className="text-3xl font-light tracking-tight text-zinc-100 leading-none mb-2">
-              Welcome back.
-            </h2>
-            <p className="text-sm text-zinc-500 mb-8">Sign in to continue.</p>
-
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-4 w-full"
+        {/* ──── VIEW 1: OPTIONS ──── */}
+        {view === "options" && (
+          <div className="w-full flex flex-col gap-2.5">
+            <button
+              onClick={function () {
+                transitionTo("email");
+              }}
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150"
             >
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="email"
-                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-3 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150"
-                />
-              </div>
+              Continue with email
+            </button>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="password"
-                  className="text-xs font-mono text-zinc-500 uppercase tracking-widest"
-                >
-                  Password
-                </label>
-                <div className="relative w-full">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-zinc-900 text-zinc-100 text-sm px-4 py-3 border border-white/10 rounded-lg placeholder:text-zinc-600 focus:border-white/20 transition-colors duration-150 pr-16"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-100 text-xs font-mono uppercase tracking-widest transition-colors duration-150"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </div>
+            <button
+              onClick={function () {
+                navigate("/register");
+              }}
+              className="w-full bg-surface-1 hover:bg-surface-2 text-ink text-[14px] font-medium py-3 rounded-full border border-hairline transition-colors duration-150"
+            >
+              Create a new account
+            </button>
 
-              {error && (
-                <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 text-xs font-normal tracking-widest text-zinc-100 uppercase border border-white/10 bg-white/5 px-6 py-3.5 rounded-full hover:bg-white/10 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+            <p className="text-center mt-5 text-[13px] text-ink-subtle">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="text-ink font-medium hover:text-primary transition-colors duration-150"
               >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </button>
-
-              <p className="text-xs font-mono text-zinc-600 text-center mt-3">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="text-zinc-100 hover:text-white transition-colors duration-150"
-                >
-                  Register
-                </Link>
-              </p>
-            </form>
+                Sign up
+              </Link>
+            </p>
           </div>
-        </div>
+        )}
 
-        <div className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-            v1.0.0
-          </span>
-          <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
-            © {new Date().getFullYear()} Intervue
-          </span>
-        </div>
+        {/* ──── VIEW 2: EMAIL ──── */}
+        {view === "email" && (
+          <form
+            onSubmit={handleContinueEmail}
+            className="w-full flex flex-col gap-2.5"
+          >
+            <input
+              ref={emailRef}
+              type="email"
+              value={email}
+              onChange={function (e) {
+                setEmail(e.target.value);
+              }}
+              placeholder="you@example.com"
+              autoComplete="email"
+              className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+            />
+
+            {error && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150"
+            >
+              Continue
+            </button>
+
+            <button
+              type="button"
+              onClick={function () {
+                transitionTo("options");
+              }}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium py-2 transition-colors duration-150"
+            >
+              ← Back
+            </button>
+          </form>
+        )}
+
+        {/* ──── VIEW 3: PASSWORD ──── */}
+        {view === "password" && (
+          <form
+            onSubmit={handleSignIn}
+            className="w-full flex flex-col gap-2.5"
+          >
+            {/* Email chip */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-5 h-5 rounded-full bg-surface-3 border border-hairline flex items-center justify-center">
+                <span className="text-[9px] font-mono text-ink-muted uppercase">
+                  {email.charAt(0)}
+                </span>
+              </div>
+              <span className="text-[13px] text-ink-muted truncate max-w-[240px]">
+                {email}
+              </span>
+            </div>
+
+            <div className="relative w-full">
+              <input
+                ref={passwordRef}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={function (e) {
+                  setPassword(e.target.value);
+                }}
+                placeholder="Enter password"
+                autoComplete="current-password"
+                className="w-full bg-surface-1 border border-hairline text-ink text-[14px] px-4 py-3 pr-16 rounded-full placeholder:text-ink-tertiary focus:outline-none focus:border-hairline-strong transition-colors duration-150 text-center"
+              />
+              <button
+                type="button"
+                onClick={function () {
+                  setShowPassword(!showPassword);
+                }}
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-ink-tertiary hover:text-ink uppercase tracking-wider transition-colors duration-150"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {error && (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary hover:bg-primary-hover text-white text-[14px] font-medium py-3 rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+            </button>
+
+            <button
+              type="button"
+              onClick={function () {
+                transitionTo("email");
+              }}
+              className="w-full text-ink-subtle hover:text-ink text-[13px] font-medium py-2 transition-colors duration-150"
+            >
+              ← Back
+            </button>
+          </form>
+        )}
       </div>
-    </div>
-  );
-}
 
-function FeatureRow({ children }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-zinc-500 text-sm font-mono">✓</span>
-      <span className="text-sm text-zinc-400 font-light">{children}</span>
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 h-10 flex items-center justify-between px-6">
+        <span className="text-[11px] font-mono text-ink-tertiary tracking-wider">
+          v1.0.0
+        </span>
+        <span className="text-[11px] font-mono text-ink-tertiary tracking-wider">
+          © {new Date().getFullYear()} Intervue
+        </span>
+      </div>
     </div>
   );
 }

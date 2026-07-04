@@ -1,106 +1,104 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-#root {
-  width: 100%;
-  min-height: 100vh;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #010102;
+    color: #f7f8f8;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: #5e6ad2;
+    color: #ffffff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #010102;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #23252a;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #34343a;
+  }
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white text-btn font-medium px-[14px] py-[8px] rounded-md 
+           hover:bg-primary-hover transition-colors duration-150 cursor-pointer;
+  }
 
-html {
-  font-family: "Inter", sans-serif;
-  background-color: #09090b;
-  color: #a1a1aa;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  .btn-secondary {
+    @apply bg-surface-1 text-ink text-btn font-medium px-[14px] py-[8px] rounded-md 
+           border border-hairline hover:bg-surface-2 transition-colors duration-150 cursor-pointer;
+  }
 
-body {
-  font-size: 16px;
-  line-height: 1.5;
-  font-weight: 400;
-  background-color: #09090b;
-}
+  .btn-tertiary {
+    @apply bg-canvas text-ink text-btn font-medium px-[14px] py-[8px] rounded-md 
+           hover:bg-surface-1 transition-colors duration-150 cursor-pointer;
+  }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
+  .btn-inverse {
+    @apply bg-inverse-canvas text-inverse-ink text-btn font-medium px-[14px] py-[8px] rounded-md 
+           hover:bg-inverse-surface-1 transition-colors duration-150 cursor-pointer;
+  }
 
-input,
-textarea,
-select {
-  font-family: inherit;
-  outline: none;
-}
+  .input-linear {
+    @apply bg-surface-1 text-ink text-[14px] font-sans font-normal
+           placeholder:text-ink-tertiary placeholder:font-sans placeholder:font-normal
+           border border-hairline rounded-md px-[12px] py-[8px]
+           focus:outline-none focus:border-hairline-strong
+           transition-colors duration-150 w-full;
+  }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
+  .card-linear {
+    @apply bg-surface-1 border border-hairline rounded-lg;
+  }
 
-/* ── Selection ── */
-::selection {
-  background: #27272a;
-  color: #f4f4f5;
-}
+  .surface-2-card {
+    @apply bg-surface-2 border border-hairline-strong rounded-lg;
+  }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: #09090b;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
+  .hairline-divider {
+    @apply border-t border-hairline w-full;
+  }
 
-/* ── Mono label utility ── */
-.label-mono {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.75rem;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #71717a;
-}
+  .status-badge {
+    @apply bg-surface-2 text-ink-muted text-caption rounded-pill px-[8px] py-[2px];
+  }
 
-/* ── Yjs live cursors ── */
-.yRemoteSelection {
-  background-color: rgba(59, 130, 246, 0.3);
-  opacity: 0.5;
-}
-
-.yRemoteSelectionHead {
-  position: absolute;
-  border-left: 2px solid;
-  border-top: 2px solid;
-  border-bottom: 2px solid;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.yRemoteSelectionHead::after {
-  position: absolute;
-  content: " ";
-  border: 3px solid;
-  left: -4px;
-  top: -5px;
-  border-radius: 4px;
+  .eyebrow-label {
+    @apply text-eyebrow text-ink-subtle uppercase tracking-widest;
+  }
 }

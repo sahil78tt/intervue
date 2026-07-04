@@ -1,120 +1,4 @@
-import { useEffect, useRef } from "react";
-
-function VideoTile({ stream, isCameraOn, isMicOn, username, isLocal }) {
-  const videoRef = useRef(null);
-
-  useEffect(
-    function () {
-      if (videoRef.current && stream) {
-        videoRef.current.srcObject = stream;
-      }
-    },
-    [stream],
-  );
-
-  function getInitials(name) {
-    if (!name) return "?";
-    return name.substring(0, 2).toUpperCase();
-  }
-
-  const tileWidth = isLocal ? "w-[100px]" : "w-[240px]";
-  const tileHeight = isLocal ? "h-[70px]" : "h-[150px]";
-
-  const initialsSize = isLocal ? "text-sm" : "text-2xl";
-  const nameSize = isLocal ? "text-[9px]" : "text-xs";
-
-  return (
-    <div
-      className={`
-        relative ${tileWidth} ${tileHeight} rounded-xl overflow-hidden
-        border border-white/10 flex-shrink-0
-        bg-zinc-950/60 backdrop-blur-sm
-      `}
-    >
-      {/* ── Video element — always rendered, hidden when camera off ── */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={isLocal}
-        className={`
-          w-full h-full object-cover
-          ${isCameraOn && stream ? "block" : "hidden"}
-        `}
-      />
-
-      {/* ── Camera OFF state — monochrome avatar ── */}
-      {(!isCameraOn || !stream) && (
-        <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center gap-1">
-          {/* Initials circle */}
-          <div
-            className={`
-              ${isLocal ? "w-7 h-7 text-[10px]" : "w-12 h-12 text-base"}
-              rounded-full bg-white text-black
-              flex items-center justify-center
-              font-bold uppercase
-            `}
-          >
-            {getInitials(username)}
-          </div>
-
-          {/* Name — only show on remote tile (local tile is too small) */}
-          {!isLocal && (
-            <>
-              <p className="text-white text-xs font-medium mt-1">
-                {username || "Guest"}
-              </p>
-              <p className="text-zinc-500 text-[10px]">camera off</p>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── Name label — bottom-left corner (like Google Meet) ── */}
-      {isCameraOn && stream && (
-        <div className="absolute bottom-1.5 left-2 flex items-center gap-1">
-          <span className={`${nameSize} text-white font-medium drop-shadow-sm`}>
-            {isLocal ? "you" : username || "Guest"}
-          </span>
-          {/* Muted mic indicator */}
-          {!isMicOn && <span className="text-[10px]">🔇</span>}
-        </div>
-      )}
-
-      {/* ── Muted indicator when camera is off too ── */}
-      {(!isCameraOn || !stream) && !isMicOn && !isLocal && (
-        <div className="absolute bottom-1.5 left-2">
-          <span className="text-[10px]">🔇</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatusDot({ status }) {
-  const dotColor = {
-    idle: "bg-zinc-600",
-    waiting: "bg-zinc-500",
-    connecting: "bg-yellow-400",
-    connected: "bg-green-400",
-  };
-
-  const label = {
-    idle: "start a call",
-    waiting: "waiting for participant...",
-    connecting: "connecting...",
-    connected: "connected",
-  };
-
-  return (
-    <div className="flex items-center gap-1.5 px-1 mt-1">
-      <div
-        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor[status] || "bg-zinc-600"}`}
-      />
-      <span className="text-[10px] text-zinc-400">{label[status] || ""}</span>
-    </div>
-  );
-}
+import { useEffect, useRef, useState } from "react";
 
 function VideoOverlay({
   localStream,
@@ -125,35 +9,242 @@ function VideoOverlay({
   username,
   remoteUsername,
 }) {
-  if (!localStream && callStatus === "idle") return null;
+  var localVideoRef = useRef(null);
+  var remoteVideoRef = useRef(null);
+  var dragRef = useRef(null);
+  var isDraggingRef = useRef(false);
+  var dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  var [position, setPosition] = useState({ x: null, y: null });
+  var [isCollapsed, setIsCollapsed] = useState(false);
+  var [fadeClass, setFadeClass] = useState("opacity-0 translate-y-2");
+
+  useEffect(
+    function () {
+      if (localStream && localVideoRef.current) {
+        localVideoRef.current.srcObject = localStream;
+      }
+    },
+    [localStream],
+  );
+
+  useEffect(
+    function () {
+      if (remoteStream && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+    },
+    [remoteStream],
+  );
+
+  useEffect(
+    function () {
+      if (localStream) {
+        var timer = setTimeout(function () {
+          setFadeClass("opacity-100 translate-y-0");
+        }, 50);
+        return function () {
+          clearTimeout(timer);
+        };
+      } else {
+        setFadeClass("opacity-0 translate-y-2");
+      }
+    },
+    [localStream],
+  );
+
+  function startDrag(e) {
+    if (e.target.closest("button")) return;
+    isDraggingRef.current = true;
+
+    var rect = dragRef.current.getBoundingClientRect();
+    dragOffsetRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    function onMove(ev) {
+      if (!isDraggingRef.current) return;
+      var newX = ev.clientX - dragOffsetRef.current.x;
+      var newY = ev.clientY - dragOffsetRef.current.y;
+
+      var maxX = window.innerWidth - rect.width - 8;
+      var maxY = window.innerHeight - rect.height - 8;
+      if (newX < 8) newX = 8;
+      if (newY < 60) newY = 60;
+      if (newX > maxX) newX = maxX;
+      if (newY > maxY) newY = maxY;
+
+      setPosition({ x: newX, y: newY });
+    }
+
+    function onUp() {
+      isDraggingRef.current = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  if (!localStream) return null;
+
+  var hasRemote = remoteStream !== null && remoteStream !== undefined;
+
+  var containerStyle = {};
+  if (position.x !== null) {
+    containerStyle = {
+      left: position.x + "px",
+      top: position.y + "px",
+      right: "auto",
+      bottom: "auto",
+    };
+  }
 
   return (
     <div
-      className="absolute bottom-6 right-6 flex flex-col items-end gap-0 z-40"
-      style={{ userSelect: "none" }}
+      ref={dragRef}
+      onMouseDown={startDrag}
+      style={containerStyle}
+      className={
+        "absolute bottom-6 right-6 z-40 transition-all duration-200 ease-out cursor-move select-none " +
+        fadeClass
+      }
     >
-      {/* ── Remote tile (top, bigger) ── */}
-      <VideoTile
-        stream={remoteStream}
-        isCameraOn={remoteStream !== null}
-        isMicOn={true}
-        username={remoteUsername}
-        isLocal={false}
-      />
+      {/* Collapsed pill state */}
+      {isCollapsed && (
+        <div className="bg-surface-1 border border-hairline rounded-full pl-1 pr-3 py-1 flex items-center gap-2 shadow-2xl">
+          <div className="flex items-center gap-1.5">
+            <div
+              className={
+                "w-2 h-2 rounded-full " +
+                (hasRemote
+                  ? "bg-semantic-success animate-pulse"
+                  : "bg-ink-tertiary")
+              }
+            />
+            <span className="text-[11px] text-ink-muted font-medium">
+              {hasRemote ? "On call" : "Waiting..."}
+            </span>
+          </div>
+          <button
+            onClick={function () {
+              setIsCollapsed(false);
+            }}
+            className="text-[10px] text-ink-tertiary hover:text-ink transition-colors duration-150 px-1"
+          >
+            ⤢
+          </button>
+        </div>
+      )}
 
-      {/* ── Status dot under remote tile ── */}
-      <StatusDot status={callStatus} />
+      {/* Expanded video card */}
+      {!isCollapsed && (
+        <div className="bg-surface-1 border border-hairline rounded-xl overflow-hidden shadow-2xl w-[280px]">
+          {/* Header */}
+          <div className="h-8 flex items-center justify-between px-3 border-b border-hairline bg-surface-2">
+            <div className="flex items-center gap-1.5">
+              <div
+                className={
+                  "w-1.5 h-1.5 rounded-full " +
+                  (hasRemote
+                    ? "bg-semantic-success animate-pulse"
+                    : "bg-ink-tertiary")
+                }
+              />
+              <span className="text-[10px] font-medium text-ink-tertiary uppercase tracking-widest">
+                {hasRemote ? "Live" : "Waiting"}
+              </span>
+            </div>
+            <button
+              onClick={function () {
+                setIsCollapsed(true);
+              }}
+              className="text-ink-tertiary hover:text-ink text-[12px] w-5 h-5 flex items-center justify-center rounded transition-colors duration-150"
+              title="Minimize"
+            >
+              −
+            </button>
+          </div>
 
-      {/* ── Local tile (bottom, smaller) ── */}
-      <div className="mt-1">
-        <VideoTile
-          stream={localStream}
-          isCameraOn={isCameraOn}
-          isMicOn={isMicOn}
-          username={username}
-          isLocal={true}
-        />
-      </div>
+          {/* Remote video (main) */}
+          <div className="relative aspect-video bg-canvas">
+            {hasRemote ? (
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-surface-3 border border-hairline flex items-center justify-center">
+                  <span className="text-[14px] font-medium text-ink-muted uppercase">
+                    {remoteUsername ? remoteUsername.substring(0, 2) : "??"}
+                  </span>
+                </div>
+                <span className="text-[11px] text-ink-tertiary font-medium">
+                  Waiting for peer...
+                </span>
+              </div>
+            )}
+
+            {/* Remote name badge */}
+            {hasRemote && (
+              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5">
+                <span className="text-[10px] text-white font-medium">
+                  {remoteUsername}
+                </span>
+              </div>
+            )}
+
+            {/* Local video PiP (Meet style) */}
+            <div className="absolute bottom-2 right-2 w-20 h-14 rounded-lg overflow-hidden border border-white/20 bg-canvas">
+              {isCameraOn ? (
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-surface-2">
+                  <span className="text-[10px] font-medium text-ink-muted uppercase">
+                    {username ? username.substring(0, 2) : "??"}
+                  </span>
+                </div>
+              )}
+
+              {/* Mic indicator on local PiP */}
+              {!isMicOn && (
+                <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-red-500/80 flex items-center justify-center">
+                  <span className="text-[8px] text-white">🔇</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status footer */}
+          <div className="h-7 flex items-center justify-between px-3 bg-surface-2 border-t border-hairline">
+            <span className="text-[10px] font-medium text-ink-tertiary">
+              You: {username}
+            </span>
+            <div className="flex items-center gap-1.5">
+              {!isMicOn && (
+                <span className="text-[10px] text-red-400/80">🔇</span>
+              )}
+              {!isCameraOn && (
+                <span className="text-[10px] text-red-400/80">📷</span>
+              )}
+              {isMicOn && isCameraOn && (
+                <span className="text-[10px] text-semantic-success">●</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

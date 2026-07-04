@@ -1,18 +1,6 @@
 import { useEffect } from "react";
 
-// ── HintModal ─────────────────────────────────────────────────────
-// Centered overlay that shows AI-generated coding hints.
-//
-// Props:
-//   isOpen      — boolean, controls visibility
-//   isLoading   — boolean, show "thinking..." state
-//   hint        — string, the AI response
-//   error       — string, error message if API failed
-//   onClose     — function, called when user closes modal
-//   onRegenerate— function, called when user wants a new hint
-
 function HintModal({ isOpen, isLoading, hint, error, onClose, onRegenerate }) {
-  // Close on Escape key — small UX polish
   useEffect(
     function () {
       if (!isOpen) return;
@@ -29,89 +17,91 @@ function HintModal({ isOpen, isLoading, hint, error, onClose, onRegenerate }) {
     [isOpen, onClose],
   );
 
-  // Don't render at all when closed
   if (!isOpen) return null;
 
   return (
-    // ── Backdrop ── dims everything behind, click to close ──
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+      className="fixed inset-0 z-50 bg-semantic-overlay/60 backdrop-blur-sm flex items-center justify-center p-6"
     >
-      {/* ── Modal ── stopPropagation so clicking modal doesn't close it ── */}
       <div
         onClick={function (e) {
           e.stopPropagation();
         }}
-        className="w-full max-w-[500px] bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden"
+        className="w-full max-w-[400px] bg-canvas border border-hairline rounded-xl overflow-hidden"
       >
-        {/* ── Header ── */}
-        <div className="h-12 flex items-center justify-between px-6 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-zinc-100 uppercase tracking-widest font-medium">
-              Hint
+        {/* Header */}
+        <div className="h-11 flex items-center justify-between px-5 border-b border-hairline">
+          <div className="flex items-center gap-2.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="text-[10px] font-mono text-ink-tertiary uppercase tracking-widest">
+              AI Hint
             </span>
-            <span className="text-zinc-500 text-xs">✦</span>
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-zinc-500 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
+            className="text-[11px] text-ink-tertiary hover:text-ink transition-colors duration-150"
           >
             close
           </button>
         </div>
 
-        {/* ── Body ── */}
-        <div className="px-6 py-8 min-h-[160px] flex flex-col justify-center">
-          {/* Loading state */}
+        {/* Body */}
+        <div className="px-5 py-8 min-h-[140px] flex flex-col justify-center">
+          {/* Loading */}
           {isLoading && (
-            <div className="flex flex-col items-start gap-3">
-              <p className="text-sm text-zinc-400 font-mono">thinking...</p>
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[13px] text-ink-subtle">
+                Generating a hint...
+              </p>
+              <div className="flex gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <div
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
                   style={{ animationDelay: "0.2s" }}
                 />
                 <div
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
+                  className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
                   style={{ animationDelay: "0.4s" }}
                 />
               </div>
             </div>
           )}
 
-          {/* Error state */}
+          {/* Error */}
           {!isLoading && error && (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-zinc-300 leading-relaxed">{error}</p>
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-red-500/70 flex-shrink-0" />
+                <p className="text-[12px] text-ink-subtle">{error}</p>
+              </div>
             </div>
           )}
 
-          {/* Success — show the hint */}
+          {/* Success */}
           {!isLoading && !error && hint && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-zinc-100 leading-relaxed whitespace-pre-wrap">
-                {hint}
-              </p>
-            </div>
+            <p className="text-[14px] text-ink leading-relaxed whitespace-pre-wrap">
+              {hint}
+            </p>
           )}
 
-          {/* Empty (first open before request finishes) */}
+          {/* Empty */}
           {!isLoading && !error && !hint && (
-            <p className="text-sm text-zinc-500 font-mono">no hint yet.</p>
+            <p className="text-[13px] text-ink-subtle text-center">
+              No hint generated yet.
+            </p>
           )}
         </div>
 
-        {/* ── Footer ── */}
-        <div className="h-12 flex items-center justify-between px-6 border-t border-white/5">
-          <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+        {/* Footer */}
+        <div className="h-11 flex items-center justify-between px-5 border-t border-hairline">
+          <span className="text-[10px] font-mono text-ink-tertiary tracking-wider">
             powered by groq
           </span>
           <button
             onClick={onRegenerate}
             disabled={isLoading}
-            className="text-xs font-mono text-zinc-400 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150 disabled:opacity-30"
+            className="text-[13px] text-ink-subtle font-medium hover:text-ink transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {error ? "retry" : "regenerate"}
           </button>

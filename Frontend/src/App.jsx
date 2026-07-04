@@ -23,7 +23,6 @@ function App() {
           }
         />
 
-        {/* Room page — also protected */}
         <Route
           path="/room/:shareLink"
           element={
@@ -42,7 +41,7 @@ function App() {
           unstyled: true,
           classNames: {
             toast:
-              "w-[340px] bg-zinc-900/95 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/20",
+              "w-[340px] bg-canvas/95 backdrop-blur-sm border border-hairline rounded-xl px-4 py-3",
           },
         }}
       />

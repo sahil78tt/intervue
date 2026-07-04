@@ -6,21 +6,23 @@ function ToastContent({ dotClassName, label, message, spinner }) {
       {/* Dot or spinner */}
       {spinner ? (
         <div className="mt-1.5 w-1.5 h-1.5">
-          <div className="w-1.5 h-1.5 rounded-full border border-zinc-400 border-t-transparent animate-spin" />
+          <div className="w-1.5 h-1.5 rounded-full border border-ink-subtle border-t-transparent animate-spin" />
         </div>
       ) : (
         <div
-          className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotClassName}`}
+          className={
+            "mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 " + dotClassName
+          }
         />
       )}
 
       {/* Text */}
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-        <span className="text-[10px] font-mono text-zinc-100 uppercase tracking-widest font-medium">
+        <span className="text-[10px] font-mono text-ink uppercase tracking-widest font-medium">
           {label}
         </span>
         {message && (
-          <span className="text-xs text-zinc-400 leading-relaxed">
+          <span className="text-[12px] text-ink-subtle leading-relaxed">
             {message}
           </span>
         )}
@@ -34,7 +36,7 @@ export function toastSuccess(label, message) {
     function () {
       return (
         <ToastContent
-          dotClassName="bg-green-500"
+          dotClassName="bg-semantic-success"
           label={label}
           message={message}
         />
@@ -79,7 +81,7 @@ export function toastInfo(label, message) {
     function () {
       return (
         <ToastContent
-          dotClassName="bg-sky-500"
+          dotClassName="bg-primary"
           label={label}
           message={message}
         />
