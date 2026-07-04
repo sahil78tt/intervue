@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import socket from "../lib/socket";
+import { toastError } from "../lib/toast";
 
 const ICE_SERVERS = {
   iceServers: [
@@ -36,8 +37,9 @@ function useWebRTC(shareLink, username) {
       return stream;
     } catch (err) {
       console.log("❌ getUserMedia failed:", err.message);
-      alert(
-        "Camera/mic permission required for video call. Please allow and refresh.",
+      toastError(
+        "PERMISSION DENIED",
+        "Camera and microphone required. Please allow access.",
       );
       return null;
     }

@@ -8,6 +8,7 @@ import ChatPanel from "../components/ChatPanel";
 import VideoOverlay from "../components/VideoOverlay";
 import useWebRTC from "../hooks/useWebRTC";
 import HintModal from "../components/HintModal";
+import { toastSuccess, toastError } from "../lib/toast";
 
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
@@ -76,20 +77,14 @@ function RoomPage() {
     leaveCall,
   } = useWebRTC(shareLink, user?.username);
 
-  // Find the remote user's name from the active users list.
-  // It's whoever is in the room that isn't us.
   const remoteUsername =
     activeUsers.find(function (u) {
       return u.username !== user?.username;
     })?.username || "Interviewer";
 
-  // ── Editor mount ───────────────────────────────────────────────
-
   const handleEditorMount = function (editor) {
     setEditorInstance(editor);
   };
-
-  // ── Fetch room ─────────────────────────────────────────────────
 
   useEffect(
     function () {
@@ -114,8 +109,6 @@ function RoomPage() {
     [shareLink],
   );
 
-  // ── Fetch user if missing (page refresh) ──────────────────────
-
   useEffect(function () {
     const fetchUser = async function () {
       if (user) return;
@@ -131,8 +124,6 @@ function RoomPage() {
     fetchUser();
   }, []);
 
-  // ── Sync room data into local state ───────────────────────────
-
   useEffect(
     function () {
       if (room) {
@@ -142,8 +133,6 @@ function RoomPage() {
     },
     [room],
   );
-
-  // ── Socket.io presence + problem sync ─────────────────────────
 
   useEffect(
     function () {
@@ -197,8 +186,6 @@ function RoomPage() {
     [user, room, shareLink],
   );
 
-  // ── Chat messages ──────────────────────────────────────────────
-
   useEffect(
     function () {
       function handleIncoming(msg) {
@@ -218,8 +205,6 @@ function RoomPage() {
     },
     [activeTab, user],
   );
-
-  // ── Yjs collaborative editing ──────────────────────────────────
 
   useEffect(
     function () {
@@ -274,8 +259,6 @@ function RoomPage() {
     [room, shareLink, editorInstance, user],
   );
 
-  // ── Helpers ────────────────────────────────────────────────────
-
   function getStarterCode(lang) {
     const starters = {
       javascript:
@@ -318,9 +301,10 @@ function RoomPage() {
         problem_statement: problemStatement,
       });
       setIsEditingProblem(false);
+      toastSuccess("PROBLEM SAVED", "All participants updated.");
     } catch (err) {
       console.log("Save problem error:", err.message);
-      alert("Failed to save problem. Try again.");
+      toastError("SAVE FAILED", "Could not update problem. Try again.");
     } finally {
       setProblemSaving(false);
     }
@@ -349,11 +333,10 @@ function RoomPage() {
       });
     } catch (err) {
       console.log("Run code error:", err.message);
-      if (err.response && err.response.data && err.response.data.message) {
-        setOutputError(err.response.data.message);
-      } else {
-        setOutputError("Failed to run code. Try again.");
-      }
+      const errorMsg =
+        err.response?.data?.message || "Failed to run code. Try again.";
+      setOutputError(errorMsg);
+      toastError("EXECUTION FAILED", errorMsg);
     } finally {
       setIsRunning(false);
     }
@@ -363,6 +346,7 @@ function RoomPage() {
     const fullLink = window.location.href;
     navigator.clipboard.writeText(fullLink);
     setCopyStatus("Copied ✓");
+    toastSuccess("LINK COPIED", "Ready to share with participants.");
     setTimeout(function () {
       setCopyStatus("Invite");
     }, 2000);
@@ -374,13 +358,11 @@ function RoomPage() {
   };
 
   const handleHint = async function () {
-    // Open modal immediately in loading state
     setIsHintOpen(true);
     setHintLoading(true);
     setHint("");
     setHintError("");
 
-    // Grab current code from editor
     const currentCode = editorInstance ? editorInstance.getValue() : "";
 
     try {
@@ -389,7 +371,6 @@ function RoomPage() {
         code: currentCode,
         language: language,
       });
-
       setHint(response.data.data.hint);
     } catch (err) {
       console.log("Hint error:", err.message);
@@ -402,8 +383,6 @@ function RoomPage() {
       setHintLoading(false);
     }
   };
-
-  // ── Loading + error states ─────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -433,11 +412,7 @@ function RoomPage() {
 
   return (
     <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
-      {/* ═══════════════════════════════════════════ */}
-      {/* NAVBAR                                       */}
-      {/* ═══════════════════════════════════════════ */}
       <header className="h-14 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 bg-zinc-950">
-        {/* Left cluster */}
         <div className="flex items-center gap-5">
           <button
             onClick={function () {
@@ -470,7 +445,6 @@ function RoomPage() {
 
           <div className="h-6 w-px bg-white/10" />
 
-          {/* Active users */}
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1.5">
               {activeUsers.slice(0, 4).map(function (u, i) {
@@ -499,9 +473,7 @@ function RoomPage() {
           </div>
         </div>
 
-        {/* Right cluster */}
         <div className="flex items-center gap-2">
-          {/* AI Hint */}
           <button
             onClick={handleHint}
             className="text-xs font-mono text-zinc-500 uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
@@ -509,7 +481,6 @@ function RoomPage() {
             Hint ✦
           </button>
 
-          {/* Invite */}
           <button
             onClick={handleCopyLink}
             className="text-xs font-mono text-zinc-500 uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 hover:text-zinc-100 hover:bg-white/5 transition-colors duration-150"
@@ -519,46 +490,34 @@ function RoomPage() {
 
           <div className="h-6 w-px bg-white/10 mx-1" />
 
-          {/* ── Mic toggle ── */}
-          {/* Only shows when we have a local stream (call is active) */}
           {localStream && (
             <button
               onClick={toggleMic}
               title={isMicOn ? "Mute mic" : "Unmute mic"}
-              className={`
-                text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150
-                ${
-                  isMicOn
-                    ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
-                    : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
-                }
-              `}
+              className={`text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150 ${
+                isMicOn
+                  ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
+                  : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
+              }`}
             >
               {isMicOn ? "Mic" : "Mic Off"}
             </button>
           )}
 
-          {/* ── Camera toggle ── */}
-          {/* Only shows when we have a local stream (call is active) */}
           {localStream && (
             <button
               onClick={toggleCamera}
               title={isCameraOn ? "Turn off camera" : "Turn on camera"}
-              className={`
-                text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150
-                ${
-                  isCameraOn
-                    ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
-                    : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
-                }
-              `}
+              className={`text-xs font-mono uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors duration-150 ${
+                isCameraOn
+                  ? "text-zinc-400 border-white/10 hover:text-zinc-100 hover:bg-white/5"
+                  : "text-zinc-950 bg-zinc-100 border-zinc-100 hover:bg-white"
+              }`}
             >
               {isCameraOn ? "Cam" : "Cam Off"}
             </button>
           )}
 
-          {/* ── Leave call ── */}
-          {/* Only shows when call is active */}
           {localStream && (
             <button
               onClick={leaveCall}
@@ -571,7 +530,6 @@ function RoomPage() {
 
           <div className="h-6 w-px bg-white/10 mx-1" />
 
-          {/* Run — primary action, always rightmost */}
           <button
             onClick={handleRunCode}
             disabled={isRunning}
@@ -583,13 +541,8 @@ function RoomPage() {
         </div>
       </header>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* BODY                                         */}
-      {/* ═══════════════════════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ── LEFT — Editor (relative so VideoOverlay anchors here) ── */}
         <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden bg-zinc-900/30 relative">
-          {/* Editor toolbar */}
           <div className="h-10 flex items-center justify-between px-5 border-b border-white/5 flex-shrink-0 bg-zinc-950">
             <div className="flex items-center gap-4">
               <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
@@ -613,7 +566,6 @@ function RoomPage() {
               </select>
             </div>
 
-            {/* Sync status */}
             <div className="flex items-center gap-2">
               <div
                 className={`w-1.5 h-1.5 rounded-full ${
@@ -628,7 +580,6 @@ function RoomPage() {
             </div>
           </div>
 
-          {/* Monaco */}
           <div className="flex-1 overflow-hidden">
             <Editor
               height="100%"
@@ -651,8 +602,6 @@ function RoomPage() {
             />
           </div>
 
-          {/* ── VideoOverlay — absolute anchored to editor area ── */}
-          {/* Renders only when localStream exists (call has started) */}
           <VideoOverlay
             localStream={localStream}
             remoteStream={remoteStream}
@@ -664,9 +613,7 @@ function RoomPage() {
           />
         </div>
 
-        {/* ── RIGHT — Tabbed Sidebar ── */}
         <div className="w-[420px] flex flex-col bg-zinc-950 flex-shrink-0">
-          {/* Tab bar */}
           <div className="h-10 flex items-center border-b border-white/5 flex-shrink-0 px-2">
             <TabButton
               active={activeTab === "problem"}
@@ -695,7 +642,6 @@ function RoomPage() {
             </TabButton>
           </div>
 
-          {/* PROBLEM TAB */}
           {activeTab === "problem" && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 flex-shrink-0">
@@ -776,7 +722,6 @@ function RoomPage() {
             </div>
           )}
 
-          {/* OUTPUT TAB */}
           {activeTab === "output" && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="px-5 py-4 flex-shrink-0">
@@ -861,7 +806,6 @@ function RoomPage() {
             </div>
           )}
 
-          {/* CHAT TAB */}
           {activeTab === "chat" && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <ChatPanelInline
@@ -871,28 +815,22 @@ function RoomPage() {
               />
             </div>
           )}
-          {/* ═══════════════════════════════════════════ */}
-          {/* HINT MODAL                                   */}
-          {/* ═══════════════════════════════════════════ */}
-          <HintModal
-            isOpen={isHintOpen}
-            isLoading={hintLoading}
-            hint={hint}
-            error={hintError}
-            onClose={function () {
-              setIsHintOpen(false);
-            }}
-            onRegenerate={handleHint}
-          />
         </div>
       </div>
+
+      <HintModal
+        isOpen={isHintOpen}
+        isLoading={hintLoading}
+        hint={hint}
+        error={hintError}
+        onClose={function () {
+          setIsHintOpen(false);
+        }}
+        onRegenerate={handleHint}
+      />
     </div>
   );
 }
-
-/* ══════════════════════════════════════════════════ */
-/* Helper components                                   */
-/* ══════════════════════════════════════════════════ */
 
 function TabButton({ active, onClick, children, badge }) {
   return (

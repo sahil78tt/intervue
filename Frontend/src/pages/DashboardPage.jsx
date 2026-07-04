@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import CreateRoomModal from "../components/CreateRoomModal";
+import ConfirmModal from "../components/ConfirmModal";
+import { toastSuccess, toastError } from "../lib/toast";
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -31,6 +33,9 @@ function DashboardPage() {
 
   const [copiedRoomId, setCopiedRoomId] = useState(null);
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(function () {
     const fetchUser = async function () {
       try {
@@ -58,6 +63,7 @@ function DashboardPage() {
       } catch (err) {
         console.log("Fetch rooms error:", err.message);
         setRoomsError("Failed to load rooms.");
+        toastError("LOAD FAILED", "Could not fetch your rooms.");
       } finally {
         setRoomsLoading(false);
       }
@@ -68,6 +74,7 @@ function DashboardPage() {
 
   const handleSignOut = function () {
     logout();
+    toastSuccess("SIGNED OUT", "See you next time.");
     navigate("/login");
   };
 
@@ -76,20 +83,28 @@ function DashboardPage() {
     setRooms([roomWithCount, ...rooms]);
   };
 
-  const handleDeleteRoom = async function (roomId, roomName, e) {
+  const handleDeleteClick = function (room, e) {
     e.stopPropagation();
-    const confirmed = window.confirm('Delete room "' + roomName + '"?');
-    if (!confirmed) return;
+    setDeleteTarget(room);
+  };
+
+  const handleConfirmDelete = async function () {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await api.delete("/rooms/" + roomId);
+      await api.delete("/rooms/" + deleteTarget.id);
       setRooms(
         rooms.filter(function (r) {
-          return r.id !== roomId;
+          return r.id !== deleteTarget.id;
         }),
       );
+      toastSuccess("ROOM DELETED", deleteTarget.name + " has been removed.");
+      setDeleteTarget(null);
     } catch (err) {
       console.log("Delete room error:", err.message);
-      alert("Failed to delete room.");
+      toastError("DELETE FAILED", "Could not delete room. Try again.");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -98,6 +113,7 @@ function DashboardPage() {
     const fullLink = window.location.origin + "/room/" + shareLink;
     navigator.clipboard.writeText(fullLink);
     setCopiedRoomId(roomId);
+    toastSuccess("LINK COPIED", "Ready to share with participants.");
     setTimeout(function () {
       setCopiedRoomId(null);
     }, 2000);
@@ -119,13 +135,12 @@ function DashboardPage() {
       const response = await api.post("/rooms/join/" + shareLink);
       const room = response.data.data.room;
 
+      toastSuccess("JOINED ROOM", "Redirecting to " + room.name + "...");
       navigate("/room/" + room.share_link);
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setJoinError(err.response.data.message);
-      } else {
-        setJoinError("Failed to join room.");
-      }
+      const errorMsg = err.response?.data?.message || "Failed to join room.";
+      setJoinError(errorMsg);
+      toastError("JOIN FAILED", errorMsg);
     } finally {
       setJoinLoading(false);
     }
@@ -173,11 +188,7 @@ function DashboardPage() {
 
   return (
     <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
-      {/* ═══════════════════════════════════════════ */}
-      {/* NAVBAR                                       */}
-      {/* ═══════════════════════════════════════════ */}
       <header className="h-14 flex items-center justify-between px-8 border-b border-white/5 flex-shrink-0">
-        {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
           <span className="text-xl font-medium tracking-tight text-zinc-100">
@@ -185,7 +196,6 @@ function DashboardPage() {
           </span>
         </div>
 
-        {/* User cluster */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-full bg-zinc-800 text-zinc-100 flex items-center justify-center text-[10px] font-mono uppercase">
@@ -212,12 +222,8 @@ function DashboardPage() {
         </div>
       </header>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* MAIN — locked height, internal scroll only  */}
-      {/* ═══════════════════════════════════════════ */}
       <main className="flex-1 px-8 py-6 overflow-hidden">
         <div className="max-w-6xl mx-auto h-full flex flex-col">
-          {/* ── Heading row ── */}
           <div className="flex items-end justify-between mb-3 flex-shrink-0">
             <div>
               <h1 className="text-3xl font-light tracking-tight text-zinc-100 leading-none">
@@ -239,11 +245,8 @@ function DashboardPage() {
             </button>
           </div>
 
-          {/* ── Two-column body: Rooms left, Join right ── */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0 mt-4">
-            {/* ── LEFT — Rooms (2/3 width) ── */}
             <div className="lg:col-span-2 flex flex-col min-h-0">
-              {/* Section label */}
               <div className="flex items-center gap-4 mb-4 flex-shrink-0">
                 <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                   Rooms{" "}
@@ -254,21 +257,18 @@ function DashboardPage() {
                 <div className="h-px bg-white/10 flex-1" />
               </div>
 
-              {/* Loading */}
               {roomsLoading && (
                 <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest py-8">
                   Loading rooms...
                 </p>
               )}
 
-              {/* Error */}
               {!roomsLoading && roomsError && (
                 <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
                   {roomsError}
                 </p>
               )}
 
-              {/* Empty */}
               {!roomsLoading && !roomsError && rooms.length === 0 && (
                 <div className="border border-dashed border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center gap-4 text-center">
                   <div className="flex flex-col gap-1">
@@ -290,7 +290,6 @@ function DashboardPage() {
                 </div>
               )}
 
-              {/* Rooms grid — scrolls internally if overflow */}
               {!roomsLoading && !roomsError && rooms.length > 0 && (
                 <div className="flex-1 overflow-y-auto pr-1 -mr-1">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -301,7 +300,6 @@ function DashboardPage() {
                           key={room.id}
                           className="border border-white/10 hover:border-white/20 rounded-2xl p-5 transition-colors duration-150 flex flex-col gap-4 bg-zinc-900/20"
                         >
-                          {/* Top — Title + meta */}
                           <div className="flex flex-col gap-2">
                             <h3 className="text-zinc-100 text-base font-light tracking-tight leading-tight truncate">
                               {room.name}
@@ -320,10 +318,8 @@ function DashboardPage() {
                             </div>
                           </div>
 
-                          {/* Divider */}
                           <div className="h-px bg-white/5" />
 
-                          {/* Actions row */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <button
@@ -337,7 +333,7 @@ function DashboardPage() {
 
                               <button
                                 onClick={function (e) {
-                                  handleDeleteRoom(room.id, room.name, e);
+                                  handleDeleteClick(room, e);
                                 }}
                                 className="text-xs font-mono text-zinc-600 uppercase tracking-widest hover:text-zinc-100 transition-colors duration-150"
                               >
@@ -363,7 +359,6 @@ function DashboardPage() {
               )}
             </div>
 
-            {/* ── RIGHT — Join card (1/3 width) ── */}
             <div className="lg:col-span-1 flex flex-col min-h-0">
               <div className="flex items-center gap-4 mb-4 flex-shrink-0">
                 <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
@@ -424,9 +419,6 @@ function DashboardPage() {
         </div>
       </main>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* FOOTER                                       */}
-      {/* ═══════════════════════════════════════════ */}
       <footer className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
         <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
           v1.0.0
@@ -444,6 +436,24 @@ function DashboardPage() {
           onRoomCreated={handleRoomCreated}
         />
       )}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Delete Room"
+        message={
+          deleteTarget
+            ? 'Delete "' +
+              deleteTarget.name +
+              '"?\n\nThis action cannot be undone. Participants will lose access to this room.'
+            : ""
+        }
+        confirmLabel="delete room"
+        onConfirm={handleConfirmDelete}
+        onClose={function () {
+          setDeleteTarget(null);
+        }}
+        isLoading={deleteLoading}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
+import { toastSuccess, toastError } from "../lib/toast";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -30,13 +31,17 @@ function RegisterPage() {
       const token = response.data.data.token;
 
       setUser(user, token);
+      toastSuccess(
+        "ACCOUNT CREATED",
+        "Welcome to Intervue, " + user.username + ".",
+      );
       navigate("/dashboard");
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      setError(errorMsg);
+      toastError("REGISTRATION FAILED", errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -44,11 +49,7 @@ function RegisterPage() {
 
   return (
     <div className="h-screen bg-zinc-950 flex overflow-hidden">
-      {/* ═══════════════════════════════════════════ */}
-      {/* LEFT PANEL — Product showcase              */}
-      {/* ═══════════════════════════════════════════ */}
       <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        {/* Top — Brand */}
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
           <span className="text-2xl font-medium tracking-tight text-zinc-100">
@@ -59,9 +60,7 @@ function RegisterPage() {
           </span>
         </div>
 
-        {/* Middle — Room list + feature list */}
         <div className="my-8 flex flex-col gap-6">
-          {/* Fake room list — matching real dashboard format */}
           <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
             <div className="h-9 border-b border-white/5 flex items-center px-4">
               <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
@@ -114,7 +113,6 @@ function RegisterPage() {
             </div>
           </div>
 
-          {/* Real feature list */}
           <div className="flex flex-col gap-2.5">
             <FeatureRow>Real-time collaborative editor</FeatureRow>
             <FeatureRow>Live cursors with user awareness</FeatureRow>
@@ -123,7 +121,6 @@ function RegisterPage() {
           </div>
         </div>
 
-        {/* Bottom — Tagline */}
         <div>
           <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
             Start hosting
@@ -136,14 +133,9 @@ function RegisterPage() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* RIGHT PANEL — Form                          */}
-      {/* ═══════════════════════════════════════════ */}
       <div className="w-full lg:w-2/5 flex flex-col h-screen">
-        {/* Form container */}
         <div className="flex-1 flex items-center justify-center px-8 py-6 overflow-y-auto">
           <div className="w-full max-w-sm">
-            {/* Mobile brand */}
             <div className="flex lg:hidden items-center gap-3 mb-8">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
               <span className="text-2xl font-medium tracking-tight text-zinc-100">
@@ -151,7 +143,6 @@ function RegisterPage() {
               </span>
             </div>
 
-            {/* Section marker — no step number */}
             <div className="flex items-center gap-4 mb-5">
               <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                 Register
@@ -159,7 +150,6 @@ function RegisterPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            {/* Heading */}
             <h2 className="text-2xl font-light tracking-tight text-zinc-100 leading-none mb-1.5">
               Create your account.
             </h2>
@@ -171,7 +161,6 @@ function RegisterPage() {
               onSubmit={handleSubmit}
               className="flex flex-col gap-3.5 w-full"
             >
-              {/* Username */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="username"
@@ -190,7 +179,6 @@ function RegisterPage() {
                 />
               </div>
 
-              {/* Email */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="email"
@@ -208,7 +196,6 @@ function RegisterPage() {
                 />
               </div>
 
-              {/* Password */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="password"
@@ -236,14 +223,12 @@ function RegisterPage() {
                 </div>
               </div>
 
-              {/* Error */}
               {error && (
                 <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-2.5 rounded-lg font-mono">
                   {error}
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -252,7 +237,6 @@ function RegisterPage() {
                 {isLoading ? "Creating account..." : "Create account"}
               </button>
 
-              {/* Bottom link */}
               <p className="text-xs font-mono text-zinc-600 text-center mt-3">
                 Already have an account?{" "}
                 <Link
@@ -266,7 +250,6 @@ function RegisterPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
           <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
             v1.0.0
@@ -280,7 +263,6 @@ function RegisterPage() {
   );
 }
 
-/* ── Small helper — feature checkmark row ── */
 function FeatureRow({ children }) {
   return (
     <div className="flex items-center gap-3">

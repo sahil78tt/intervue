@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
+import { toastSuccess, toastError } from "../lib/toast";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -28,13 +29,14 @@ function LoginPage() {
       const token = response.data.data.token;
 
       setUser(user, token);
+      toastSuccess("SIGNED IN", "Welcome back, " + user.username + ".");
       navigate("/dashboard");
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      setError(errorMsg);
+      toastError("SIGN IN FAILED", errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -42,11 +44,7 @@ function LoginPage() {
 
   return (
     <div className="h-screen bg-zinc-950 flex overflow-hidden">
-      {/* ═══════════════════════════════════════════ */}
-      {/* LEFT PANEL — Product showcase              */}
-      {/* ═══════════════════════════════════════════ */}
       <div className="hidden lg:flex lg:w-3/5 border-r border-white/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        {/* Top — Brand */}
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
           <span className="text-2xl font-medium tracking-tight text-zinc-100">
@@ -57,9 +55,7 @@ function LoginPage() {
           </span>
         </div>
 
-        {/* Middle — Editor preview + feature list */}
         <div className="my-8 flex flex-col gap-6">
-          {/* Fake editor with interview-style code */}
           <div className="border border-white/10 rounded-2xl overflow-hidden bg-zinc-900/30">
             <div className="h-9 border-b border-white/5 flex items-center justify-between px-4">
               <div className="flex items-center gap-3">
@@ -146,7 +142,6 @@ function LoginPage() {
             </div>
           </div>
 
-          {/* Real feature list — replaces fake metadata */}
           <div className="flex flex-col gap-2.5">
             <FeatureRow>Real-time collaborative editor</FeatureRow>
             <FeatureRow>Live cursors with user awareness</FeatureRow>
@@ -155,7 +150,6 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom — Tagline */}
         <div>
           <h1 className="text-4xl xl:text-5xl font-light tracking-tight text-zinc-100 leading-none mb-4">
             Collaborative
@@ -168,14 +162,9 @@ function LoginPage() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* RIGHT PANEL — Form                          */}
-      {/* ═══════════════════════════════════════════ */}
       <div className="w-full lg:w-2/5 flex flex-col h-screen">
-        {/* Form container */}
         <div className="flex-1 flex items-center justify-center px-8 py-8 overflow-y-auto">
           <div className="w-full max-w-sm">
-            {/* Mobile brand */}
             <div className="flex lg:hidden items-center gap-3 mb-8">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
               <span className="text-2xl font-medium tracking-tight text-zinc-100">
@@ -183,7 +172,6 @@ function LoginPage() {
               </span>
             </div>
 
-            {/* Section marker — no step number */}
             <div className="flex items-center gap-4 mb-6">
               <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
                 Sign in
@@ -191,7 +179,6 @@ function LoginPage() {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            {/* Heading */}
             <h2 className="text-3xl font-light tracking-tight text-zinc-100 leading-none mb-2">
               Welcome back.
             </h2>
@@ -201,7 +188,6 @@ function LoginPage() {
               onSubmit={handleSubmit}
               className="flex flex-col gap-4 w-full"
             >
-              {/* Email */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="email"
@@ -219,7 +205,6 @@ function LoginPage() {
                 />
               </div>
 
-              {/* Password */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="password"
@@ -246,14 +231,12 @@ function LoginPage() {
                 </div>
               </div>
 
-              {/* Error */}
               {error && (
                 <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
                   {error}
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -262,7 +245,6 @@ function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </button>
 
-              {/* Bottom link */}
               <p className="text-xs font-mono text-zinc-600 text-center mt-3">
                 Don't have an account?{" "}
                 <Link
@@ -276,7 +258,6 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="h-10 flex items-center justify-between px-8 border-t border-white/5 flex-shrink-0">
           <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest">
             v1.0.0
@@ -290,7 +271,6 @@ function LoginPage() {
   );
 }
 
-/* ── Small helper — feature checkmark row ── */
 function FeatureRow({ children }) {
   return (
     <div className="flex items-center gap-3">

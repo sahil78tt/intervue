@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
+import { toastSuccess, toastError } from "../lib/toast";
 
 const LANGUAGES = ["javascript", "python", "cpp", "c", "java", "typescript"];
 
@@ -23,13 +24,14 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
       const newRoom = response.data.data.room;
 
       onRoomCreated(newRoom);
+      toastSuccess("ROOM CREATED", newRoom.name + " is ready to share.");
       onClose();
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      setError(errorMsg);
+      toastError("CREATE FAILED", errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +48,6 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
           e.stopPropagation();
         }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-light tracking-tight text-zinc-100">
             New room.
@@ -60,7 +61,6 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Name */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="room-name"
@@ -82,7 +82,6 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
             />
           </div>
 
-          {/* Language */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="room-language"
@@ -108,14 +107,12 @@ function CreateRoomModal({ onClose, onRoomCreated }) {
             </select>
           </div>
 
-          {/* Error */}
           {error && (
             <p className="text-xs text-zinc-400 bg-zinc-900 border border-white/10 px-4 py-3 rounded-lg font-mono">
               {error}
             </p>
           )}
 
-          {/* Buttons */}
           <div className="flex items-center gap-3 mt-2">
             <button
               type="button"
