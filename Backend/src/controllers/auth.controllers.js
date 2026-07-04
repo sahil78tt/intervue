@@ -2,10 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../configs/connect.js";
 
-// Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
@@ -52,11 +50,13 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const now = new Date();
+
     const { rows } = await pool.query(
-      `INSERT INTO users (username, email, password_hash)
-       VALUES ($1, $2, $3)
+      `INSERT INTO users (username, email, password_hash, created_at)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, username, email, avatar_url, created_at`,
-      [username.toLowerCase(), email.toLowerCase(), passwordHash],
+      [username.toLowerCase(), email.toLowerCase(), passwordHash, now],
     );
 
     const user = rows[0];

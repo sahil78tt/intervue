@@ -15,20 +15,23 @@ export const createRoom = async (req, res) => {
 
     const shareLink = nanoid(10);
 
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
     const roomResult = await pool.query(
-      `INSERT INTO rooms (name, owner_id, share_link, language)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO rooms (name, owner_id, share_link, language, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [name, ownerId, shareLink, language || "javascript"],
+      [name, ownerId, shareLink, language || "javascript", now, expiresAt],
     );
 
     const room = roomResult.rows[0];
 
     // Add creator as host in room_participants
     await pool.query(
-      `INSERT INTO room_participants (room_id, user_id, role)
-       VALUES ($1, $2, $3)`,
-      [room.id, ownerId, "host"],
+      `INSERT INTO room_participants (room_id, user_id, role, joined_at)
+       VALUES ($1, $2, $3, $4)`,
+      [room.id, ownerId, "host", new Date()],
     );
 
     return res.status(201).json({
@@ -50,13 +53,15 @@ export const joinRoom = async (req, res) => {
     const { shareLink } = req.params;
     const userId = req.userId;
 
-    // Find the room
+    // Use JS Date instead of NOW() for expiration check
+    const now = new Date();
+
     const roomResult = await pool.query(
       `SELECT * FROM rooms 
        WHERE share_link = $1 
          AND is_active = true 
-         AND expires_at > NOW()`,
-      [shareLink],
+         AND expires_at > $2`,
+      [shareLink, now],
     );
 
     if (roomResult.rows.length === 0) {
@@ -68,12 +73,11 @@ export const joinRoom = async (req, res) => {
 
     const room = roomResult.rows[0];
 
-    // Add user as participant (ignore if already joined)
     await pool.query(
-      `INSERT INTO room_participants (room_id, user_id, role)
-       VALUES ($1, $2, $3)
+      `INSERT INTO room_participants (room_id, user_id, role, joined_at)
+       VALUES ($1, $2, $3, $4)
        ON CONFLICT (room_id, user_id) DO NOTHING`,
-      [room.id, userId, "participant"],
+      [room.id, userId, "participant", now],
     );
 
     return res.status(200).json({
@@ -123,7 +127,6 @@ export const deleteRoom = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
 
-    // Soft delete - only if user is the owner
     const result = await pool.query(
       `UPDATE rooms 
        SET is_active = false 
@@ -151,18 +154,21 @@ export const deleteRoom = async (req, res) => {
     });
   }
 };
-// Get single room by share link (for room page)
+
 export const getRoomByShareLink = async (req, res) => {
   try {
     const { shareLink } = req.params;
     const userId = req.userId;
 
+    // Use JS Date instead of NOW()
+    const now = new Date();
+
     const roomResult = await pool.query(
       `SELECT * FROM rooms 
        WHERE share_link = $1 
          AND is_active = true 
-         AND expires_at > NOW()`,
-      [shareLink],
+         AND expires_at > $2`,
+      [shareLink, now],
     );
 
     if (roomResult.rows.length === 0) {
@@ -205,7 +211,6 @@ export const getRoomByShareLink = async (req, res) => {
   }
 };
 
-//host only
 export const updateProblem = async (req, res) => {
   try {
     const { shareLink } = req.params;
