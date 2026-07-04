@@ -235,7 +235,7 @@ function RoomPage() {
       var ydoc = new Y.Doc();
       ydocRef.current = ydoc;
       var provider = new WebsocketProvider(
-        "ws://localhost:1234",
+        import.meta.env.VITE_WS_URL || "ws://localhost:1234",
         shareLink,
         ydoc,
       );

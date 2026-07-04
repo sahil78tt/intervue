@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:8003", {
+const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:8003", {
   autoConnect: false,
 });
 
