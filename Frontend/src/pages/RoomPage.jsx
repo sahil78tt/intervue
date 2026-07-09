@@ -49,56 +49,59 @@ const LANGUAGE_OPTIONS = LANGUAGES.map(function (lang) {
 });
 
 function RoomPage() {
-  var navigate = useNavigate();
-  var { shareLink } = useParams();
-  var user = useAuthStore(function (state) {
+  const navigate = useNavigate();
+  const { shareLink } = useParams();
+  const user = useAuthStore(function (state) {
     return state.user;
   });
 
-  var bindingRef = useRef(null);
-  var providerRef = useRef(null);
-  var ydocRef = useRef(null);
-  var drawerRef = useRef(null);
-  var isDraggingRef = useRef(false);
+  const bindingRef = useRef(null);
+  const providerRef = useRef(null);
+  const ydocRef = useRef(null);
+  const drawerRef = useRef(null);
+  const isDraggingRef = useRef(false);
 
-  var [editorInstance, setEditorInstance] = useState(null);
-  var [language, setLanguage] = useState("javascript");
-  var [syncStatus, setSyncStatus] = useState("connecting");
+  const remoteCursorsRef = useRef({});
+  const cursorTimersRef = useRef({});
 
-  var [problemStatement, setProblemStatement] = useState("");
-  var [isEditingProblem, setIsEditingProblem] = useState(false);
-  var [problemSaving, setProblemSaving] = useState(false);
+  const [editorInstance, setEditorInstance] = useState(null);
+  const [language, setLanguage] = useState("javascript");
+  const [syncStatus, setSyncStatus] = useState("connecting");
 
-  var [isRunning, setIsRunning] = useState(false);
-  var [output, setOutput] = useState("");
-  var [outputError, setOutputError] = useState("");
-  var [lastRunMeta, setLastRunMeta] = useState(null);
+  const [problemStatement, setProblemStatement] = useState("");
+  const [isEditingProblem, setIsEditingProblem] = useState(false);
+  const [problemSaving, setProblemSaving] = useState(false);
 
-  var [room, setRoom] = useState(null);
-  var [role, setRole] = useState("");
-  var [isLoading, setIsLoading] = useState(true);
-  var [error, setError] = useState("");
-  var [activeUsers, setActiveUsers] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState("");
+  const [outputError, setOutputError] = useState("");
+  const [lastRunMeta, setLastRunMeta] = useState(null);
 
-  var [copyStatus, setCopyStatus] = useState("Invite");
+  const [room, setRoom] = useState(null);
+  const [role, setRole] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeUsers, setActiveUsers] = useState([]);
 
-  var [messages, setMessages] = useState([]);
-  var [chatInput, setChatInput] = useState("");
-  var [unreadCount, setUnreadCount] = useState(0);
+  const [copyStatus, setCopyStatus] = useState("Invite");
 
-  var [isHintOpen, setIsHintOpen] = useState(false);
-  var [hint, setHint] = useState("");
-  var [hintLoading, setHintLoading] = useState(false);
-  var [hintError, setHintError] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  var [activePanel, setActivePanel] = useState("problem");
-  var [drawerHeight, setDrawerHeight] = useState(32);
-  var [drawerOpen, setDrawerOpen] = useState(false);
-  var [focusMode, setFocusMode] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [hint, setHint] = useState("");
+  const [hintLoading, setHintLoading] = useState(false);
+  const [hintError, setHintError] = useState("");
 
-  var chatBottomRef = useRef(null);
+  const [activePanel, setActivePanel] = useState("problem");
+  const [drawerHeight, setDrawerHeight] = useState(32);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
-  var {
+  const chatBottomRef = useRef(null);
+
+  const {
     localStream,
     remoteStream,
     isMicOn,
@@ -109,7 +112,7 @@ function RoomPage() {
     leaveCall,
   } = useWebRTC(shareLink, user?.username);
 
-  var remoteUsername =
+  const remoteUsername =
     activeUsers.find(function (u) {
       return u.username !== user?.username;
     })?.username || "Interviewer";
@@ -122,11 +125,10 @@ function RoomPage() {
     function () {
       async function fetchRoom() {
         try {
-          var response = await api.get("/rooms/" + shareLink);
+          const response = await api.get("/rooms/" + shareLink);
           setRoom(response.data.data.room);
           setRole(response.data.data.role);
         } catch (err) {
-          console.log("Fetch room error:", err.message);
           if (err.response?.data?.message) {
             setError(err.response.data.message);
           } else {
@@ -145,9 +147,9 @@ function RoomPage() {
     async function fetchUser() {
       if (user) return;
       try {
-        var response = await api.get("/auth/me");
-        var userData = response.data.data.user;
-        var token = localStorage.getItem("token");
+        const response = await api.get("/auth/me");
+        const userData = response.data.data.user;
+        const token = localStorage.getItem("token");
         useAuthStore.getState().setUser(userData, token);
       } catch (err) {
         console.log("Fetch user error:", err.message);
@@ -232,9 +234,9 @@ function RoomPage() {
   useEffect(
     function () {
       if (!room || !editorInstance) return;
-      var ydoc = new Y.Doc();
+      const ydoc = new Y.Doc();
       ydocRef.current = ydoc;
-      var provider = new WebsocketProvider(
+      const provider = new WebsocketProvider(
         import.meta.env.VITE_WS_URL || "ws://localhost:1234",
         shareLink,
         ydoc,
@@ -248,8 +250,8 @@ function RoomPage() {
         });
       }
 
-      var ytext = ydoc.getText("monaco");
-      var binding = new MonacoBinding(
+      const ytext = ydoc.getText("monaco");
+      const binding = new MonacoBinding(
         ytext,
         editorInstance.getModel(),
         new Set([editorInstance]),
@@ -260,12 +262,133 @@ function RoomPage() {
       provider.on("sync", function (isSynced) {
         if (isSynced) setSyncStatus("synced");
         if (isSynced && ytext.length === 0) {
-          var starterCode = getStarterCode(room.language);
+          const starterCode = getStarterCode(room.language);
           ytext.insert(0, starterCode);
         }
       });
 
+      function drawRemoteCursor(clientId) {
+        const state = provider.awareness.getStates().get(clientId);
+        if (!state || !state.user || !state.cursor) return;
+
+        const model = editorInstance.getModel();
+        if (!model) return;
+
+        let position;
+        try {
+          position = model.getPositionAt(state.cursor.index || 0);
+        } catch (e) {
+          return;
+        }
+
+        const userName = state.user.name;
+        const userColor = state.user.color;
+
+        const newDecorations = [
+          {
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+            options: {
+              className: "remote-cursor-line remote-cursor-line-" + clientId,
+              afterContentClassName:
+                "remote-cursor-label remote-cursor-" + clientId,
+              stickiness: 1,
+            },
+          },
+        ];
+
+        let styleTag = document.getElementById("cursor-style-" + clientId);
+        if (!styleTag) {
+          styleTag = document.createElement("style");
+          styleTag.id = "cursor-style-" + clientId;
+          document.head.appendChild(styleTag);
+        }
+        styleTag.innerHTML =
+          ".remote-cursor-" +
+          clientId +
+          "::after { content: '" +
+          userName +
+          "'; background-color: " +
+          userColor +
+          "; }" +
+          ".remote-cursor-line-" +
+          clientId +
+          " { border-left-color: " +
+          userColor +
+          " !important; }";
+
+        const oldIds = remoteCursorsRef.current[clientId] || [];
+        const newIds = editorInstance.deltaDecorations(oldIds, newDecorations);
+        remoteCursorsRef.current[clientId] = newIds;
+
+        if (cursorTimersRef.current[clientId]) {
+          clearTimeout(cursorTimersRef.current[clientId]);
+        }
+        cursorTimersRef.current[clientId] = setTimeout(function () {
+          const ids = remoteCursorsRef.current[clientId] || [];
+          editorInstance.deltaDecorations(ids, []);
+          remoteCursorsRef.current[clientId] = [];
+        }, 2500);
+      }
+
+      function removeRemoteCursor(clientId) {
+        const ids = remoteCursorsRef.current[clientId] || [];
+        editorInstance.deltaDecorations(ids, []);
+        delete remoteCursorsRef.current[clientId];
+
+        if (cursorTimersRef.current[clientId]) {
+          clearTimeout(cursorTimersRef.current[clientId]);
+          delete cursorTimersRef.current[clientId];
+        }
+
+        const styleTag = document.getElementById("cursor-style-" + clientId);
+        if (styleTag) styleTag.remove();
+      }
+
+      function handleAwarenessChange({ added, updated, removed }) {
+        const myClientId = provider.awareness.clientID;
+
+        added.concat(updated).forEach(function (clientId) {
+          if (clientId === myClientId) return;
+          drawRemoteCursor(clientId);
+        });
+
+        removed.forEach(function (clientId) {
+          if (clientId === myClientId) return;
+          removeRemoteCursor(clientId);
+        });
+      }
+
+      const cursorListener = editorInstance.onDidChangeCursorPosition(
+        function (e) {
+          const model = editorInstance.getModel();
+          if (!model) return;
+          const index = model.getOffsetAt(e.position);
+          provider.awareness.setLocalStateField("cursor", { index: index });
+        },
+      );
+
+      provider.awareness.on("change", handleAwarenessChange);
+
       return function () {
+        Object.keys(cursorTimersRef.current).forEach(function (id) {
+          clearTimeout(cursorTimersRef.current[id]);
+        });
+        cursorTimersRef.current = {};
+        remoteCursorsRef.current = {};
+
+        document
+          .querySelectorAll("[id^='cursor-style-']")
+          .forEach(function (tag) {
+            tag.remove();
+          });
+
+        cursorListener.dispose();
+        provider.awareness.off("change", handleAwarenessChange);
         binding.destroy();
         provider.destroy();
         ydoc.destroy();
@@ -276,7 +399,7 @@ function RoomPage() {
   );
 
   function getStarterCode(lang) {
-    var starters = {
+    const starters = {
       javascript:
         "// Write your JavaScript code here\nconsole.log('Hello, Intervue!');",
       python: "# Write your Python code here\nprint('Hello, Intervue!')",
@@ -290,7 +413,7 @@ function RoomPage() {
   }
 
   function getUserColor(username) {
-    var colors = [
+    const colors = [
       "#EF4444",
       "#F59E0B",
       "#10B981",
@@ -299,8 +422,8 @@ function RoomPage() {
       "#EC4899",
       "#14B8A6",
     ];
-    var hash = 0;
-    for (var i = 0; i < username.length; i++) {
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
       hash = username.charCodeAt(i) + ((hash << 5) - hash);
     }
     return colors[Math.abs(hash) % colors.length];
@@ -333,19 +456,19 @@ function RoomPage() {
     setDrawerOpen(true);
     setDrawerHeight(240);
 
-    var currentCode = editorInstance ? editorInstance.getValue() : "";
-    var startTime = Date.now();
+    const currentCode = editorInstance ? editorInstance.getValue() : "";
+    const startTime = Date.now();
 
     try {
-      var response = await api.post("/execute", {
+      const response = await api.post("/execute", {
         language: language,
         code: currentCode,
       });
-      var result = response.data.data;
+      const result = response.data.data;
       setOutput(result.output);
       setLastRunMeta({ execTime: Date.now() - startTime + " ms", memory: "—" });
     } catch (err) {
-      var errorMsg =
+      const errorMsg =
         err.response?.data?.message || "Failed to run code. Try again.";
       setOutputError(errorMsg);
       toastError("EXECUTION FAILED", errorMsg);
@@ -355,7 +478,7 @@ function RoomPage() {
   }
 
   function handleCopyLink() {
-    var fullLink = window.location.href;
+    const fullLink = window.location.href;
     navigator.clipboard.writeText(fullLink);
     setCopyStatus("Copied ✓");
     toastSuccess("LINK COPIED", "Ready to share with participants.");
@@ -401,9 +524,9 @@ function RoomPage() {
     setHintLoading(true);
     setHint("");
     setHintError("");
-    var currentCode = editorInstance ? editorInstance.getValue() : "";
+    const currentCode = editorInstance ? editorInstance.getValue() : "";
     try {
-      var response = await api.post("/hint", {
+      const response = await api.post("/hint", {
         problem_statement: problemStatement,
         code: currentCode,
         language: language,
@@ -421,7 +544,7 @@ function RoomPage() {
   }
 
   function handleSendChat() {
-    var trimmed = chatInput.trim();
+    const trimmed = chatInput.trim();
     if (!trimmed) return;
     socket.emit("chat:send", {
       shareLink: shareLink,
@@ -444,7 +567,7 @@ function RoomPage() {
 
     function onMove(ev) {
       if (!isDraggingRef.current) return;
-      var newHeight = window.innerHeight - ev.clientY - 48;
+      let newHeight = window.innerHeight - ev.clientY - 48;
       if (newHeight < 60) newHeight = 32;
       if (newHeight > 500) newHeight = 500;
       setDrawerHeight(newHeight);
@@ -491,7 +614,6 @@ function RoomPage() {
 
   return (
     <div className="h-screen bg-canvas flex flex-col overflow-hidden font-sans">
-      {/* ═══════════════════════════ TOP BAR ═══════════════════════════ */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0 bg-canvas z-30">
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -585,9 +707,7 @@ function RoomPage() {
         </div>
       </header>
 
-      {/* ═══════════════════════════ MAIN BODY ═══════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ────────── ICON RAIL (48px) ────────── */}
         <aside className="w-12 flex-shrink-0 border-r border-hairline bg-canvas flex flex-col items-center py-3 z-20">
           <div className="flex flex-col gap-1 flex-1">
             <RailButton
@@ -646,7 +766,6 @@ function RoomPage() {
           )}
         </aside>
 
-        {/* ────────── EDITOR + CONSOLE COLUMN ────────── */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <div className="h-9 flex items-center justify-between px-4 border-b border-hairline flex-shrink-0 bg-surface-1">
             <div className="flex items-center gap-3">
@@ -709,7 +828,6 @@ function RoomPage() {
             />
           </div>
 
-          {/* ────────── BOTTOM CONSOLE DRAWER ────────── */}
           <div
             ref={drawerRef}
             className="flex flex-col flex-shrink-0 border-t border-hairline bg-surface-1 relative"
@@ -807,7 +925,6 @@ function RoomPage() {
           </div>
         </div>
 
-        {/* ────────── RIGHT CONTEXTUAL PANEL ────────── */}
         {activePanel && (
           <aside
             className="w-[340px] flex-shrink-0 border-l border-hairline bg-surface-1 flex flex-col overflow-hidden"
@@ -829,7 +946,6 @@ function RoomPage() {
               </button>
             </div>
 
-            {/* ──── PROBLEM PANEL ──── */}
             {activePanel === "problem" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -903,7 +1019,6 @@ function RoomPage() {
               </div>
             )}
 
-            {/* ──── CHAT PANEL ──── */}
             {activePanel === "chat" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -913,7 +1028,7 @@ function RoomPage() {
                     </p>
                   )}
                   {messages.map(function (msg) {
-                    var isMe = msg.username === user?.username;
+                    const isMe = msg.username === user?.username;
                     return (
                       <div key={msg.id} className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
@@ -963,12 +1078,11 @@ function RoomPage() {
               </div>
             )}
 
-            {/* ──── PEOPLE PANEL ──── */}
             {activePanel === "people" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto">
                   {activeUsers.map(function (u, i) {
-                    var isYou = u.username === user?.username;
+                    const isYou = u.username === user?.username;
                     return (
                       <div
                         key={i}
@@ -1053,12 +1167,12 @@ function RailButton({ icon, label, active, onClick, badge, danger }) {
 }
 
 function getProblemTitle(text) {
-  var lines = text.trim().split("\n");
+  const lines = text.trim().split("\n");
   return lines[0] || "Untitled";
 }
 
 function getProblemBody(text) {
-  var lines = text.trim().split("\n");
+  const lines = text.trim().split("\n");
   if (lines.length <= 1) return "";
   return lines.slice(1).join("\n").trim();
 }

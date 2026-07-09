@@ -102,3 +102,35 @@
     @apply text-eyebrow text-ink-subtle uppercase tracking-widest;
   }
 }
+
+.remote-cursor-line {
+  border-left: 2px solid;
+  margin-left: -1px;
+}
+
+.remote-cursor-label {
+  position: absolute;
+  top: -1.4em;
+  padding: 2px 6px;
+  color: white;
+  font-size: 10px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  border-radius: 4px 4px 4px 0;
+  white-space: nowrap;
+  line-height: 1;
+  z-index: 100;
+  pointer-events: none;
+  animation: cursorFade 0.15s ease-out;
+}
+
+@keyframes cursorFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
