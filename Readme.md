@@ -38,6 +38,8 @@ A coding interview platform that puts the entire interview in one workspace — 
 
 Built for interviewers who want CoderPad-level collaboration without the price tag.
 
+> **Note:** Intervue is currently optimized for **desktop browsers only**. Mobile/responsive support is not yet implemented — for the best experience, use a laptop or desktop screen.
+
 ---
 
 ## Features
@@ -277,28 +279,10 @@ VITE_WS_URL=ws://localhost:1234
 
 ---
 
-## Roadmap
+## Known Limitations
 
-**Done**
-
-- Collaborative editor with live cursors
-- WebRTC video and audio
-- AI hints via Groq
-- Room chat with unread indicators
-- Live presence tracking
-- Problem statement sync
-- Code execution (6 languages)
-- Rate limiting and security hardening
-- Full deployment pipeline
-
-**Planned**
-
-- Judge0 migration for real execution metrics
-- Screen sharing
-- Group video (SFU-based)
-- TURN server for strict firewalls
-- Session recording and playback
-- HTTPOnly cookies for JWT
+- **Desktop only** — the UI is currently designed and tested for desktop browsers. Mobile and tablet layouts are not yet supported.
+- **WebRTC across strict NATs** — video/audio uses STUN only, which works reliably on the same network or "friendly" NATs. For production use across arbitrary networks (strict NATs/firewalls), a TURN server (e.g. Metered.ca or Twilio) would be required.
 
 ---
 
