@@ -5,11 +5,11 @@ import { toastSuccess, toastError } from "../lib/toast";
 
 const LANGUAGE_OPTIONS = [
   { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
   { value: "python", label: "Python" },
   { value: "cpp", label: "C++" },
+  { value: "c", label: "C" },
   { value: "java", label: "Java" },
-  { value: "go", label: "Go" },
-  { value: "rust", label: "Rust" },
 ];
 
 function CreateRoomModal({ onClose, onRoomCreated }) {
