@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+
 const roomUsers = {};
 
 function addUserToRoom(shareLink, username, socketId) {
@@ -31,6 +33,19 @@ function removeUserFromAllRooms(socketId) {
 }
 
 export const setupSocketHandlers = function (io) {
+  // JWT auth: har socket connection pe token verify hota hai (handshake.auth.token)
+  io.use(function (socket, next) {
+    try {
+      const token = socket.handshake.auth && socket.handshake.auth.token;
+      if (!token) return next(new Error("unauthorized"));
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.id;
+      next();
+    } catch (error) {
+      next(new Error("unauthorized"));
+    }
+  });
+
   io.on("connection", function (socket) {
     console.log("✅ User connected:", socket.id);
 
