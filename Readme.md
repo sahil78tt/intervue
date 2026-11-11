@@ -1,3 +1,5 @@
+# Intervue.
+
 <p align="center">
   <img src="./Frontend/public/favicon.svg" alt="Intervue Logo" width="72" />
 </p>
@@ -5,7 +7,7 @@
 <h1 align="center">Intervue.</h1>
 
 <p align="center">
-Real-time collaborative coding interviews with live video and AI hints.
+  Real-time collaborative coding interviews with live video and AI hints.
 </p>
 
 <p align="center">
@@ -15,277 +17,407 @@ Real-time collaborative coding interviews with live video and AI hints.
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" />
-<img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white" />
-<img src="https://img.shields.io/badge/PostgreSQL-Neon-336791?style=for-the-badge&logo=postgresql&logoColor=white" />
-<img src="https://img.shields.io/badge/Socket.io-4.0-010101?style=for-the-badge&logo=socket.io&logoColor=white" />
-<img src="https://img.shields.io/badge/WebRTC-Native-333333?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Yjs-CRDT-6C5CE7?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Groq-LLM-F55036?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Neon-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Socket.io-4.0-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io" />
+  <img src="https://img.shields.io/badge/WebRTC-Native-333333?style=for-the-badge" alt="WebRTC" />
+  <img src="https://img.shields.io/badge/Yjs-CRDT-6C5CE7?style=for-the-badge" alt="Yjs" />
+  <img src="https://img.shields.io/badge/Groq-LLM-F55036?style=for-the-badge" alt="Groq" />
+  <img src="https://img.shields.io/badge/Tests-Vitest_·_80_passing-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="80 Passing Tests" />
 </p>
 
 ---
 
 <p align="center">
-<img src="./Frontend/public/screenshots/room.png" alt="Intervue Room" width="900" />
+  <img src="./Frontend/public/screenshots/room.png" alt="Intervue Room" width="900" />
 </p>
 
 ---
 
 ## What is Intervue?
 
-A coding interview platform that puts the entire interview in one workspace — shared editor, video call, AI hints, and chat, all scoped to a shareable room link.
+Intervue is a real-time collaborative coding interview platform that brings everything into one workspace: a shared code editor, video calling, AI-powered hints, and room-based chat.
+
+Create a room, share its link, and start collaborating instantly.
 
 Built for interviewers who want CoderPad-level collaboration without the price tag.
 
-> **Note:** Intervue is currently optimized for **desktop browsers only**. Mobile/responsive support is not yet implemented — for the best experience, use a laptop or desktop screen.
+> **Note:** Intervue is currently optimized for desktop browsers. Mobile and tablet support is not yet implemented. For the best experience, use a laptop or desktop.
 
 ---
 
 ## Features
 
-- **Collaborative editor** — Monaco + Yjs CRDT. Multiple users edit simultaneously with live cursors showing who is where.
-- **WebRTC video calling** — Peer-to-peer video and audio directly between browsers. Picture-in-picture overlay with mic and camera controls.
-- **AI hints** — Groq Llama 3.3 70B analyzes the candidate's actual code and gives contextual nudges without revealing the solution.
-- **Sandboxed execution** — Run code in 6 languages (JavaScript, Python, C++, C, Java, TypeScript) via JDoodle.
-- **Problem statement panel** — Host writes the question live. All participants see updates instantly.
-- **Room-scoped chat** — Real-time chat with unread indicators, persisted across tab switches.
-- **Live presence** — Avatars in the top bar update in real time as users join and leave.
+- **Collaborative Code Editor** — Monaco Editor with Yjs CRDT enables multiple participants to edit code simultaneously, with live cursors showing each participant's position.
+- **WebRTC Video Calling** — Peer-to-peer video and audio directly between browsers, with picture-in-picture support and microphone and camera controls.
+- **AI-Powered Hints** — Groq Llama 3.3 70B analyzes the candidate's actual code and provides contextual hints without revealing the complete solution.
+- **Integrated Code Execution** — Execute code in six languages: JavaScript, Python, C++, C, Java, and TypeScript using the JDoodle API.
+- **Live Problem Statements** — The host can write and update problem statements, which are synchronized instantly across all participants.
+- **Room-Scoped Chat** — Real-time messaging with unread indicators and persistent chat state across tab switches.
+- **Authenticated Real-Time Communication** — Socket.io connections are authenticated using the same JWT as the REST API. Unauthorized connections are rejected during the handshake.
+- **Live User Presence** — Participant avatars update instantly as users join or leave a room.
 
 ---
 
 ## Tech Stack
 
-**Frontend** — React 19, Vite 5, Monaco Editor, Yjs, y-websocket, Socket.io Client, Zustand, TailwindCSS, Lucide React, Sonner
+### Frontend
 
-**Backend** — Node.js, Express, PostgreSQL (Neon), Socket.io, JWT, bcryptjs, Helmet, express-rate-limit
+- React 19
+- Vite 5
+- Monaco Editor
+- Yjs and y-websocket
+- Socket.io Client
+- Zustand
+- Tailwind CSS
+- Lucide React
+- Sonner
 
-**External** — Groq API (Llama 3.3 70B), JDoodle (code execution), Google STUN (WebRTC)
+### Backend
 
-**Hosting** — Cloudflare Pages (frontend), Render (backend + y-websocket), Neon (database), UptimeRobot (keep-alive)
+- Node.js
+- Express 5
+- PostgreSQL (Neon)
+- Socket.io
+- JWT Authentication
+- bcryptjs
+- Helmet
+- express-rate-limit
+
+### Testing
+
+- Vitest
+- Supertest
+- socket.io-client
+
+### External Services
+
+- Groq API — Llama 3.3 70B for AI hints
+- JDoodle API — Code execution
+- Google STUN — WebRTC connectivity
+
+### Hosting
+
+- Cloudflare Pages — Frontend
+- Render — Backend and Yjs WebSocket server
+- Neon — PostgreSQL database
+- UptimeRobot — Backend keep-alive
 
 ---
 
 ## Architecture
 
-```
-Browser A                                            Browser B
-    │                                                    │
-    │  REST + Socket.io                                  │
-    ├──────────────► Express + Socket.io ◄───────────────┤
-    │                      │                             │
-    │                      ├─► PostgreSQL (Neon)         │
-    │                      ├─► Groq API (hints)          │
-    │                      └─► JDoodle (execution)       │
-    │                                                    │
-    │  y-websocket (editor sync)                         │
-    ├──────────────► Yjs WebSocket Server ◄──────────────┤
-    │                                                    │
-    │  WebRTC (video — direct P2P after handshake)       │
-    └────────────────────────────────────────────────────┘
+```text
+                    ┌─────────────────────┐
+                    │      Browser A      │
+                    └──────────┬──────────┘
+                               │
+             ┌─────────────────┼──────────────────┐
+             │                 │                  │
+        REST + Socket.io   y-websocket          WebRTC
+             │                 │                  │
+             ▼                 ▼                  │
+    ┌────────────────┐  ┌───────────────┐         │
+    │ Express Server │  │ Yjs WebSocket │         │
+    │ + Socket.io    │  │    Server     │         │
+    └───────┬────────┘  └───────────────┘         │
+            │                                      │
+       ┌────┼─────────────┐                        │
+       │    │             │                        │
+       ▼    ▼             ▼                        │
+    Neon   Groq        JDoodle                     │
+       │    │             │                        │
+       └────┴─────────────┘                        │
+                                                  │
+                    ┌─────────────────────┐       │
+                    │      Browser B      │◄──────┘
+                    └─────────────────────┘
 ```
 
-Three real-time channels in parallel:
+Three real-time communication channels work in parallel:
 
-- **Socket.io** — presence, chat, problem sync, WebRTC signaling
-- **y-websocket** — collaborative editor (CRDT)
-- **WebRTC** — peer-to-peer video and audio (no server after handshake)
+1. **Socket.io** — Handles user presence, chat, problem statement synchronization, and WebRTC signaling. Connections are JWT authenticated.
+2. **y-websocket** — Handles collaborative editor synchronization using Yjs CRDT.
+3. **WebRTC** — Handles peer-to-peer video and audio communication directly between browsers after signaling.
 
 ---
 
 ## Project Structure
 
-```
+```text
 intervue/
+│
 ├── Backend/
-│   └── src/
-│       ├── configs/
-│       ├── controllers/
-│       │   ├── auth.controllers.js
-│       │   ├── room.controllers.js
-│       │   ├── execute.controllers.js
-│       │   └── hint.controllers.js
-│       ├── middlewares/
-│       ├── routes/
-│       ├── sockets/
-│       │   └── socketHandler.js
-│       ├── database/
-│       │   └── schema.sql
-│       └── server.js
+│   ├── src/
+│   │   ├── configs/
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── routes/
+│   │   ├── sockets/
+│   │   ├── database/
+│   │   └── server.js
+│   │
+│   ├── tests/
+│   ├── package.json
+│   └── vitest.config.js
 │
 ├── Frontend/
-│   └── src/
-│       ├── api/
-│       ├── components/
-│       ├── hooks/
-│       │   └── useWebRTC.js
-│       ├── lib/
-│       ├── pages/
-│       ├── store/
-│       └── App.jsx
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── screenshots/
+│   │
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   ├── store/
+│   │   └── App.jsx
+│   │
+│   └── package.json
 │
 ├── YWebSocket/
-│   └── server.js
+│   ├── server.js
+│   ├── utils.js
+│   └── package.json
 │
 └── README.md
 ```
 
 ---
 
-## Deployment
+## Installation and Setup
 
-| Service     | Provider         | Purpose                    |
-| ----------- | ---------------- | -------------------------- |
-| Frontend    | Cloudflare Pages | Static build, CDN          |
-| Backend     | Render           | Express + Socket.io        |
-| Y-WebSocket | Render           | Yjs sync server            |
-| Database    | Neon             | PostgreSQL serverless      |
-| Uptime      | UptimeRobot      | Prevent Render cold starts |
+### Prerequisites
 
-Frontend and both Render services auto-deploy on push to `main`. UptimeRobot pings every 5 minutes to keep them warm.
+- Node.js 18 or later
+- npm
+- PostgreSQL database (Neon recommended)
+- Groq API key
+- JDoodle API credentials
 
----
-
-## API Reference
-
-### Auth
-
-| Method | Endpoint           | Description    |
-| ------ | ------------------ | -------------- |
-| POST   | /api/auth/register | Create account |
-| POST   | /api/auth/login    | Login          |
-| GET    | /api/auth/me       | Current user   |
-
-### Rooms
-
-| Method | Endpoint                      | Description                |
-| ------ | ----------------------------- | -------------------------- |
-| POST   | /api/rooms                    | Create room                |
-| POST   | /api/rooms/join/:shareLink    | Join by share link         |
-| GET    | /api/rooms/my                 | User's rooms               |
-| GET    | /api/rooms/:shareLink         | Room details               |
-| PATCH  | /api/rooms/:shareLink/problem | Update problem (host only) |
-| DELETE | /api/rooms/:id                | Delete room                |
-
-### Execution & AI
-
-| Method | Endpoint     | Description |
-| ------ | ------------ | ----------- |
-| POST   | /api/execute | Run code    |
-| POST   | /api/hint    | Get AI hint |
-
----
-
-## Socket Events
-
-| Event                | Direction       | Purpose                |
-| -------------------- | --------------- | ---------------------- |
-| join-room            | Client → Server | Enter room             |
-| leave-room           | Client → Server | Exit room              |
-| user-joined          | Server → Client | New user notification  |
-| user-left            | Server → Client | User left notification |
-| room-users           | Server → Client | Active users list      |
-| problem-updated      | Bidirectional   | Problem statement sync |
-| chat:send            | Client → Server | Send message           |
-| chat:received        | Server → Client | Broadcast message      |
-| webrtc:offer         | Bidirectional   | SDP offer              |
-| webrtc:answer        | Bidirectional   | SDP answer             |
-| webrtc:ice-candidate | Bidirectional   | ICE exchange           |
-| webrtc:leave         | Bidirectional   | Call ended             |
-
----
-
-## Security
-
-- Helmet for HTTP security headers
-- CORS whitelist — only accepted origins
-- JWT on all protected routes
-- bcrypt password hashing
-- Rate limiting — login (5/15min), register (3/hour), hints (20/hour)
-- Body size limit (100kb) against DoS
-- SQL ownership checks so users cannot touch others' resources
-
----
-
-## Installation
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/sahil78tt/intervue.git
+
 cd intervue
 ```
 
-```bash
-cd Backend && npm install
-cd ../Frontend && npm install
-cd ../YWebSocket && npm install
-```
-
-Run three terminals:
+### 2. Install Dependencies
 
 ```bash
-# Terminal 1
-cd Backend && npm run dev
+cd Backend
+npm install
 
-# Terminal 2
-cd YWebSocket && npm start
+cd ../Frontend
+npm install
 
-# Terminal 3
-cd Frontend && npm run dev
+cd ../YWebSocket
+npm install
 ```
 
-Open `http://localhost:5173` in two separate browsers to test collaboration.
+### 3. Configure Environment Variables
 
----
+Create the following environment files.
 
-## Environment Variables
+**Backend — `Backend/.env`**
 
-**Backend** — `Backend/.env`
-
-```
+```env
 PORT=8003
+
 DATABASE_URL=
+
 JWT_SECRET=
 JWT_EXPIRES_IN=7d
+
 JDOODLE_CLIENT_ID=
 JDOODLE_CLIENT_SECRET=
+
 GROQ_API_KEY=
 GROQ_MODEL=llama-3.3-70b-versatile
+
 FRONTEND_URL=http://localhost:5173
 ```
 
-**Frontend** — `Frontend/.env`
+**Frontend — `Frontend/.env`**
 
-```
+```env
 VITE_API_URL=http://localhost:8003/api
 VITE_SOCKET_URL=http://localhost:8003
 VITE_WS_URL=ws://localhost:1234
 ```
 
+### 4. Start the Application
+
+Run each service in a separate terminal.
+
+**Terminal 1 — Backend**
+
+```bash
+cd Backend
+npm run dev
+```
+
+**Terminal 2 — Yjs WebSocket Server**
+
+```bash
+cd YWebSocket
+npm start
+```
+
+**Terminal 3 — Frontend**
+
+```bash
+cd Frontend
+npm run dev
+```
+
+### 5. Open the Application
+
+Visit:
+
+```text
+http://localhost:5173
+```
+
+Open the application in two separate browser sessions to test real-time collaboration.
+
 ---
 
-## Screenshots
+## Testing
 
-<p align="center">
-<img src="./Frontend/public/screenshots/dashboard.png" width="100%" alt="Dashboard" />
-</p>
+The backend includes an integration test suite built with **Vitest** and **Supertest**.
 
-<p align="center">
-<img src="./Frontend/public/screenshots/hint.png" width="100%" alt="AI hint" />
-</p>
+### Run Tests
 
-<p align="center">
-<img src="./Frontend/public/screenshots/video.png" width="100%" alt="Video call" />
-</p>
+```bash
+cd Backend
+
+npm install
+
+npm test
+```
+
+<details>
+<summary><strong>Test Coverage</strong></summary>
+
+**Current Test Results: 80 Tests Passing**
+
+The test suite covers:
+
+- **Authentication and Rooms** — Registration, login, JWT validation, room creation, joining, and ownership checks, including 403 and 404 responses.
+- **Code Execution and AI Hints** — Execution proxying with mocked JDoodle responses and AI hint generation with mocked Groq responses.
+- **Rate Limiting** — Verifies the five-requests-per-hour limit for AI hints per user.
+- **WebSockets** — Tests real Socket.io server connections, JWT handshake authentication, authorization failures, and cross-room data isolation.
+
+**Testing Notes:**
+
+Tests use `tests/helpers/app.js` to mount routes on a fresh Express application. External services such as PostgreSQL, Axios, and fetch are mocked, so no real database connection or external API keys are required to run the test suite.
+
+</details>
+
+---
+
+## API Reference
+
+### Authentication
+
+| Method | Endpoint             | Description       |
+| :----- | :------------------- | :---------------- |
+| POST   | `/api/auth/register` | Create an account |
+| POST   | `/api/auth/login`    | Log in            |
+| GET    | `/api/auth/me`       | Get current user  |
+
+### Rooms
+
+| Method | Endpoint                        | Description                          |
+| :----- | :------------------------------ | :----------------------------------- |
+| POST   | `/api/rooms`                    | Create a room                        |
+| POST   | `/api/rooms/join/:shareLink`    | Join using a share link              |
+| GET    | `/api/rooms/my`                 | Get user's rooms                     |
+| GET    | `/api/rooms/:shareLink`         | Get room details                     |
+| PATCH  | `/api/rooms/:shareLink/problem` | Update problem statement (host only) |
+| DELETE | `/api/rooms/:id`                | Delete a room                        |
+
+### Code Execution and AI
+
+| Method | Endpoint       | Description       |
+| :----- | :------------- | :---------------- |
+| POST   | `/api/execute` | Execute code      |
+| POST   | `/api/hint`    | Generate AI hints |
+
+---
+
+## Socket.io Events
+
+The Socket.io server requires a valid JWT passed through `auth: { token }` during the connection handshake.
+
+| Event                  | Direction       | Purpose                                   |
+| :--------------------- | :-------------- | :---------------------------------------- |
+| `join-room`            | Client → Server | Join a room                               |
+| `leave-room`           | Client → Server | Leave a room                              |
+| `user-joined`          | Server → Client | Notify when a user joins                  |
+| `user-left`            | Server → Client | Notify when a user leaves                 |
+| `room-users`           | Server → Client | Get active room participants              |
+| `problem-updated`      | Bidirectional   | Synchronize problem statements            |
+| `chat:send`            | Client → Server | Send a chat message                       |
+| `chat:received`        | Server → Client | Broadcast a chat message                  |
+| `webrtc:offer`         | Bidirectional   | Exchange SDP offers                       |
+| `webrtc:answer`        | Bidirectional   | Exchange SDP answers                      |
+| `webrtc:ice-candidate` | Bidirectional   | Exchange ICE candidates                   |
+| `webrtc:leave`         | Bidirectional   | Notify when a participant leaves the call |
+
+---
+
+## Security
+
+Intervue implements several security measures:
+
+- **Helmet** — Adds HTTP security headers.
+- **CORS Whitelist** — Restricts requests to accepted origins.
+- **JWT Authentication** — Protects authenticated REST API routes.
+- **Socket.io Authentication** — Validates JWTs during WebSocket handshakes and rejects unauthorized connections before event handlers run.
+- **Password Hashing** — Uses bcryptjs to securely hash passwords.
+- **Rate Limiting** — Limits AI hint requests to five per hour per user.
+- **Request Body Limit** — Restricts request payloads to 100 KB to reduce DoS exposure.
+- **SQL Ownership Checks** — Prevents users from accessing or modifying resources belonging to other users.
 
 ---
 
 ## Known Limitations
 
-- **Desktop only** — the UI is currently designed and tested for desktop browsers. Mobile and tablet layouts are not yet supported.
-- **WebRTC across strict NATs** — video/audio uses STUN only, which works reliably on the same network or "friendly" NATs. For production use across arbitrary networks (strict NATs/firewalls), a TURN server (e.g. Metered.ca or Twilio) would be required.
+- **Desktop Only:** The interface is currently designed and tested for desktop browsers. Mobile and tablet layouts are not yet supported.
+- **WebRTC Across Strict NATs:** Video and audio currently use STUN only. Connections work reliably on the same network and compatible NAT configurations. A TURN server (such as Metered.ca or Twilio) would be required for more reliable connectivity across restrictive networks and firewalls.
+- **Yjs WebSocket Authentication:** The Yjs WebSocket server currently does not verify JWTs, unlike the Socket.io server. Adding token verification during the WebSocket upgrade is a planned security improvement.
+- **Socket Room Authorization:** The Socket.io middleware verifies user authentication but does not currently query the database to confirm active membership of the specific room associated with every socket event.
+
+---
+
+## Future Improvements
+
+- Mobile and tablet responsive layouts.
+- JWT authentication for the Yjs WebSocket server.
+- Database-backed Socket.io room membership validation.
+- TURN server integration for more reliable WebRTC connectivity.
+- Additional programming language support.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
 
 ---
 
 <p align="center">
-Built by <a href="https://github.com/sahil78tt">Sahil Vishwakarma</a> · MIT License
+  Built by <a href="https://github.com/sahil78tt">Sahil Vishwakarma</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/sahil78tt/intervue">GitHub Repository</a>
+  ·
+  <a href="https://intervue-eti.pages.dev">Live Demo</a>
 </p>
